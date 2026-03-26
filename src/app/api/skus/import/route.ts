@@ -30,8 +30,8 @@ export async function POST(request: Request) {
 
       const result = await prisma.sku.upsert({
         where: { code },
-        update: { name, quantity: { increment: quantity }, srp, lowStockThreshold: threshold },
-        create: { code, name, quantity, srp, lowStockThreshold: threshold },
+        update: { name, quantity: { increment: quantity }, srp, lowStockThreshold: threshold, imageUrl: row.imageUrl || null },
+        create: { code, name, quantity, srp, lowStockThreshold: threshold, imageUrl: row.imageUrl || null },
       });
       results.push(result);
     }

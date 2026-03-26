@@ -102,7 +102,7 @@ export default function InventoryPage() {
       const res = await fetch('/api/skus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newSku, lowStockThreshold: 10 }),
+        body: JSON.stringify({ ...newSku, imageUrl: newSku.imageUrl || null, lowStockThreshold: 10 }),
       });
       if (res.ok) {
         setMessage({ text: 'SKU added successfully', type: 'success' });
