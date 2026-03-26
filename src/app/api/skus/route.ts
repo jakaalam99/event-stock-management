@@ -27,12 +27,12 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { code, name, quantity, srp, lowStockThreshold } = body;
+    const { code, name, quantity, srp, lowStockThreshold, imageUrl } = body;
 
     const sku = await prisma.sku.upsert({
       where: { code },
-      update: { name, quantity: { increment: quantity }, srp: srp || 0, lowStockThreshold },
-      create: { code, name, quantity, srp: srp || 0, lowStockThreshold },
+      update: { name, quantity: { increment: quantity }, srp: srp || 0, lowStockThreshold, imageUrl },
+      create: { code, name, quantity, srp: srp || 0, lowStockThreshold, imageUrl },
     });
 
     return NextResponse.json(sku);

@@ -10,6 +10,7 @@ interface SKU {
   name: string;
   quantity: number;
   srp: number;
+  imageUrl?: string;
 }
 
 interface CartItem {
@@ -19,6 +20,7 @@ interface CartItem {
   quantity: number;
   maxQuantity: number;
   srp: number;
+  imageUrl?: string;
 }
 
 export default function ShopOutPage() {
@@ -51,7 +53,7 @@ export default function ShopOutPage() {
         if (existing.quantity >= sku.quantity) return prev;
         return prev.map(item => item.skuId === sku.id ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      return [...prev, { skuId: sku.id, quantity: 1, name: sku.name, code: sku.code, maxQuantity: sku.quantity, srp: sku.srp }];
+      return [...prev, { skuId: sku.id, quantity: 1, name: sku.name, code: sku.code, maxQuantity: sku.quantity, srp: sku.srp, imageUrl: sku.imageUrl }];
     });
   };
 
@@ -104,47 +106,62 @@ export default function ShopOutPage() {
         {/* Product Grid */}
         <div className="lg:col-span-12 xl:col-span-8 flex flex-col gap-6 overflow-hidden min-h-0">
           <header className="flex flex-col gap-1 items-stretch">
-            <h2 className="text-2xl md:text-3xl font-bold text-primary">Shop-Out System</h2>
-            <p className="text-muted-foreground text-sm font-medium">Deduct stock for operational use</p>
+            <h2 className="text-3xl md:text-5xl font-black text-primary uppercase italic tracking-tighter">
+              Shop-<span className="text-accent underline decoration-4 decoration-accent/30 underline-offset-8">Out</span>
+            </h2>
+            <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">Rapid Asset Deployment & Deduction</p>
           </header>
 
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={20} />
             <input
               type="text"
-              placeholder="Quick search SKU..."
-              className="input pl-10 h-12 text-base md:text-lg shadow-sm border-none bg-white font-medium"
+              placeholder="Query SKU code or identify item..."
+              className="input pl-12 h-14 bg-white border-none shadow-xl shadow-primary/5 font-bold text-lg"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-2 pb-4 max-h-[350px] lg:max-h-none min-h-0 border-b border-border/10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 overflow-y-auto pr-2 pb-10 max-h-[400px] lg:max-h-none min-h-0">
             {skus.map((sku) => (
               <div 
                 key={sku.id} 
                 onClick={() => addToCart(sku)}
-                className={`card p-4 md:p-5 cursor-pointer transition-all hover:border-accent group relative border-none shadow-sm hover:shadow-xl ${sku.quantity <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}`}
+                className={`group p-0 rounded-[2.5rem] bg-white border border-border/40 shadow-xl shadow-primary/5 hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500 cursor-pointer overflow-hidden relative ${sku.quantity <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}`}
               >
-                <div className="flex justify-between items-start mb-3">
-                  <div className="p-2 rounded-lg bg-muted group-hover:bg-accent/10 transition-colors">
-                    <ShoppingCart size={18} className="text-muted-foreground group-hover:text-accent" />
+                {/* Image Container */}
+                <div className="h-60 w-full bg-muted/20 relative overflow-hidden">
+                   {sku.imageUrl ? (
+                     <img src={sku.imageUrl} alt={sku.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                   ) : (
+                     <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
+                        <ShoppingCart size={80} strokeWidth={1} />
+                     </div>
+                   )}
+                   <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-2xl shadow-lg border border-border/50">
+                      <span className={`text-xs font-black uppercase tracking-widest ${sku.quantity <= 10 ? 'text-error' : 'text-primary'}`}>
+                        {sku.quantity} units
+                      </span>
+                   </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-black font-mono text-accent leading-none uppercase tracking-[0.2em]">{sku.code}</span>
+                    <h3 className="text-xl font-black text-primary leading-tight group-hover:text-accent transition-colors truncate">{sku.name}</h3>
+                    <div className="text-sm font-black text-primary mt-2">
+                       IDR {sku.srp?.toLocaleString()}
+                    </div>
                   </div>
-                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${sku.quantity <= 10 ? 'bg-error/10 text-error' : 'bg-success/10 text-success'}`}>
-                    {sku.quantity} in stock
-                  </span>
+                  
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); addToCart(sku); }}
+                    className="mt-6 w-full h-12 rounded-2xl bg-muted/30 group-hover:bg-accent group-hover:text-white transition-all font-black uppercase tracking-[0.2em] text-[10px] active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <Plus size={14} /> Add To Cart
+                  </button>
                 </div>
-                <div className="font-bold text-base md:text-lg text-primary">{sku.name}</div>
-                <div className="flex justify-between items-center mt-1">
-                  <div className="text-[10px] text-muted-foreground font-mono font-bold">{sku.code}</div>
-                  <div className="text-xs font-black text-accent">IDR {sku.srp?.toLocaleString()}</div>
-                </div>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); addToCart(sku); }}
-                  className="mt-4 w-full btn btn-outline text-xs h-10 border-muted group-hover:bg-accent group-hover:text-white group-hover:border-accent font-black uppercase tracking-widest active:scale-95 transition-transform"
-                >
-                  Add to Cart
-                </button>
               </div>
             ))}
           </div>

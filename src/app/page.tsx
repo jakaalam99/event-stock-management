@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Package, TrendingDown, AlertTriangle, ArrowUpRight, Activity, DollarSign, ShoppingBag, Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Package, TrendingDown, AlertTriangle, ArrowUpRight, Activity, DollarSign, ShoppingBag, Download, FileSpreadsheet, FileText, BarChart3 } from 'lucide-react';
 import AuthGuard from '@/components/AuthGuard';
 import * as XLSX from 'xlsx';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface SKU {
   id: string;
@@ -39,6 +39,7 @@ interface SkuContribution {
   code: string;
   name: string;
   qtySold: number;
+  currentStock: number;
   revenue: number;
   percentage: number;
 }
@@ -75,7 +76,12 @@ export default function DashboardPage() {
       
       let totalRevenue = 0;
       let totalItemsSold = 0;
-      const moveCounts: Record<string, { name: string; code: string; qty: number; val: number }> = {};
+      const moveCounts: Record<string, { name: string; code: string; qty: number; val: number; stock: number }> = {};
+
+      // Initialize with all SKUs so we show current stock even for those items with no sales
+      skus.forEach(s => {
+        moveCounts[s.id] = { name: s.name, code: s.code, qty: 0, val: 0, stock: s.quantity };
+      });
 
       txs.forEach((t: Transaction) => {
         if (t.status === 'COMPLETED') {
@@ -89,11 +95,10 @@ export default function DashboardPage() {
               totalRevenue += value;
               totalItemsSold += qty;
 
-              if (!moveCounts[item.skuId]) {
-                moveCounts[item.skuId] = { name: item.sku.name, code: item.sku.code, qty: 0, val: 0 };
+              if (moveCounts[item.skuId]) {
+                moveCounts[item.skuId].qty += qty;
+                moveCounts[item.skuId].val += value;
               }
-              moveCounts[item.skuId].qty += qty;
-              moveCounts[item.skuId].val += value;
             }
           });
         }
@@ -105,6 +110,7 @@ export default function DashboardPage() {
           code: data.code,
           name: data.name,
           qtySold: data.qty,
+          currentStock: data.stock,
           revenue: data.val,
           percentage: totalRevenue > 0 ? (data.val / totalRevenue) * 100 : 0
         }))
@@ -136,9 +142,10 @@ export default function DashboardPage() {
     const wsData = stats.skuContributions.map(sku => ({
       'SKU Code': sku.code,
       'Product Name': sku.name,
-      'Qty Sold': sku.qtySold,
-      'Revenue (IDR)': sku.revenue,
-      'Contribution %': sku.percentage.toFixed(2) + '%'
+      'Current Stock': sku.currentStock,
+      'Qty Sold (Net)': sku.qtySold,
+      'Revenue Generated (IDR)': sku.revenue,
+      'Revenue Contribution %': sku.percentage.toFixed(2) + '%'
     }));
 
     const ws = XLSX.utils.json_to_sheet(wsData);
@@ -149,38 +156,43 @@ export default function DashboardPage() {
 
   const exportToPDF = () => {
     if (!stats) return;
-    const doc = new jsPDF() as any;
+    const doc = new jsPDF();
     
-    doc.setFontSize(20);
-    doc.text("EventStock Intelligence Report", 14, 22);
+    doc.setFontSize(22);
+    doc.setTextColor(20, 184, 166); // Accent color
+    doc.text("EventStock Intelligence Report", 14, 25);
     
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 32);
     
-    doc.autoTable({
+    autoTable(doc, {
       startY: 40,
       head: [['Metric', 'Value']],
       body: [
-        ['Total Revenue', `IDR ${stats.totalRevenue.toLocaleString()}`],
-        ['Total Items Sold', stats.totalItemsSold.toLocaleString()],
-        ['Active SKUs', stats.totalSkus.toString()],
+        ['Total Realtime Revenue', `IDR ${stats.totalRevenue.toLocaleString()}`],
+        ['Total Items Sold (Net)', stats.totalItemsSold.toLocaleString()],
+        ['Active SKU Count', stats.totalSkus.toString()],
         ['Low Stock Alerts', stats.lowStockItems.toString()]
       ],
+      headStyles: { fillColor: [15, 23, 42] },
       theme: 'striped',
     });
 
-    doc.autoTable({
-      startY: doc.lastAutoTable.finalY + 10,
-      head: [['Code', 'Product', 'Qty', 'Revenue', 'Contrib %']],
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 15,
+      head: [['Code', 'Product', 'Stock', 'Qty Sold', 'Revenue', 'Contrib %']],
       body: stats.skuContributions.map(sku => [
         sku.code,
         sku.name,
+        sku.currentStock.toLocaleString(),
         sku.qtySold.toLocaleString(),
         `IDR ${sku.revenue.toLocaleString()}`,
         sku.percentage.toFixed(2) + '%'
       ]),
+      headStyles: { fillColor: [20, 184, 166] },
       theme: 'grid',
+      styles: { fontSize: 8 }
     });
 
     doc.save(`EventStock_Report_${new Date().toLocaleDateString()}.pdf`);
@@ -256,7 +268,8 @@ export default function DashboardPage() {
                     <tr className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
                       <th className="pb-2 pl-4">Rank</th>
                       <th className="pb-2">SKU Detail</th>
-                      <th className="pb-2 text-right">Qty</th>
+                      <th className="pb-2 text-right">Stock</th>
+                      <th className="pb-2 text-right">Qty Sold</th>
                       <th className="pb-2 text-right">Value (IDR)</th>
                       <th className="pb-2 text-right pr-4">Contrib %</th>
                     </tr>
@@ -264,7 +277,7 @@ export default function DashboardPage() {
                   <tbody>
                     {stats.skuContributions.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-20 text-center text-muted-foreground italic font-medium">No sales data available for contribution analysis.</td>
+                        <td colSpan={6} className="py-20 text-center text-muted-foreground italic font-medium">No sales data available for contribution analysis.</td>
                       </tr>
                     ) : stats.skuContributions.map((sku, idx) => (
                       <tr key={sku.id} className="bg-muted/30 group/row hover:bg-white hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
@@ -278,6 +291,9 @@ export default function DashboardPage() {
                             <span className="font-bold text-primary text-sm group-hover/row:text-accent transition-colors">{sku.name}</span>
                             <span className="font-mono text-[9px] font-bold text-muted-foreground">{sku.code}</span>
                           </div>
+                        </td>
+                        <td className="py-4 text-right">
+                          <span className="text-sm font-bold text-muted-foreground">{sku.currentStock.toLocaleString()}</span>
                         </td>
                         <td className="py-4 text-right">
                           <span className="text-sm font-black text-primary">{sku.qtySold.toLocaleString()}</span>
