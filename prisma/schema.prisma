@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Sku {
+  id                String            @id @default(cuid())
+  code              String            @unique
+  name              String
+  description       String?
+  quantity          Int               @default(0)
+  srp               Float?            @default(0)
+  lowStockThreshold Int               @default(10)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  transactionItems  TransactionItem[]
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  password     String        // Hashed
+  name         String
+  role         UserRole      @default(USER)
+  createdAt    DateTime      @default(now())
+  transactions Transaction[]
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+model Transaction {
+  id        String            @id @default(cuid())
+  groupId   String            @default(uuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
+  type      TransactionType
+  status    TransactionStatus @default(COMPLETED)
+  createdAt DateTime          @default(now())
+  items     TransactionItem[]
+}
+
+model TransactionItem {
+  id            String      @id @default(cuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  skuId         String
+  sku           Sku         @relation(fields: [skuId], references: [id])
+  quantity      Int
+  createdAt     DateTime    @default(now())
+}
+
+enum TransactionType {
+  SHOP_OUT
+  REVERSAL
+}
+
+enum TransactionStatus {
+  COMPLETED
+  CANCELLED
+}
