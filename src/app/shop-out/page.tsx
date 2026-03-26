@@ -236,8 +236,6 @@ export default function ShopOutPage() {
           </div>
         </div>
       </div>
-
-      </div>
     </AuthGuard>
   );
 }
