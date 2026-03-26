@@ -56,8 +56,15 @@ CREATE TABLE "TransactionItem" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Initial Data Seed (Password: password123)
+-- Initial Data Seed (Password for both: password123)
+-- IMPORTANT: Passwords MUST be hashed with bcrypt. 
+-- Do not insert plain text passwords into the "User" table.
 INSERT INTO "User" ("id", "email", "password", "name", "role")
 VALUES 
 ('user_admin', 'admin@eventstock.com', '$2b$10$tQ88mxzM68uznWs0sOrYTuGvaIbVCxiIczPpPs8hSgYLi1a8Jnwrm', 'Administrator', 'ADMIN'),
-('user_staff', 'staff@eventstock.com', '$2b$10$tQ88mxzM68uznWs0sOrYTuGvaIbVCxiIczPpPs8hSgYLi1a8Jnwrm', 'Inventory Staff', 'USER');
+('user_staff', 'staff@eventstock.com', '$2b$10$tQ88mxzM68uznWs0sOrYTuGvaIbVCxiIczPpPs8hSgYLi1a8Jnwrm', 'Inventory Staff', 'USER')
+ON CONFLICT ("email") DO UPDATE SET "password" = EXCLUDED."password";
+
+-- To add your own custom user, use the Supabase SQL Editor:
+-- INSERT INTO "User" ("id", "email", "password", "name", "role")
+-- VALUES ('unique_id', 'your@email.com', 'bcrypt_hash_here', 'Your Name', 'ADMIN');
