@@ -44,6 +44,9 @@ export default function ShopOutPage() {
 
   const addToCart = (sku: SKU) => {
     if (sku.quantity <= 0) return;
+    // temporary debug alert for real devices
+    if (typeof window !== 'undefined') window.alert('Adding to cart: ' + sku.name);
+    
     setCart(prev => {
       const existing = prev.find(item => item.skuId === sku.id);
       if (existing) {
@@ -118,11 +121,12 @@ export default function ShopOutPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-2 pb-4 h-auto lg:max-h-none min-h-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-2 pb-4 max-h-[350px] lg:max-h-none min-h-0 border-b border-border/10">
             {skus.map((sku) => (
               <div 
                 key={sku.id} 
                 onClick={() => addToCart(sku)}
+                onTouchStart={() => {}} // dummy to ensure touch works
                 className={`card p-4 md:p-5 cursor-pointer transition-all hover:border-accent group relative border-none shadow-sm hover:shadow-xl ${sku.quantity <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}`}
               >
                 <div className="flex justify-between items-start mb-3">
@@ -140,7 +144,8 @@ export default function ShopOutPage() {
                 </div>
                 <button 
                   onClick={(e) => { e.stopPropagation(); addToCart(sku); }}
-                  className="mt-4 w-full btn btn-outline text-xs h-10 border-muted group-hover:bg-accent group-hover:text-white group-hover:border-accent font-black uppercase tracking-widest"
+                  onTouchStart={(e) => { e.stopPropagation(); addToCart(sku); }}
+                  className="mt-4 w-full btn btn-outline text-xs h-10 border-muted group-hover:bg-accent group-hover:text-white group-hover:border-accent font-black uppercase tracking-widest active:scale-95"
                 >
                   Add to Cart
                 </button>
@@ -156,7 +161,7 @@ export default function ShopOutPage() {
               const cartElement = document.getElementById('checkout-cart');
               cartElement?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="xl:hidden fixed bottom-6 right-6 z-50 bg-accent text-white p-4 rounded-full shadow-2xl flex items-center gap-2 animate-bounce hover:animate-none active:scale-95"
+            className="xl:hidden fixed bottom-6 right-6 z-[200] bg-accent text-white p-4 rounded-full shadow-2xl flex items-center gap-2 animate-bounce hover:animate-none active:scale-95"
           >
             <ShoppingCart size={24} />
             <span className="font-bold">{cart.length}</span>
@@ -164,7 +169,7 @@ export default function ShopOutPage() {
         )}
 
         {/* Sidebar Cart */}
-        <div id="checkout-cart" className="lg:col-span-12 xl:col-span-4 flex flex-col bg-white border border-border/50 rounded-2xl shadow-xl overflow-hidden relative min-h-[450px] lg:h-full">
+        <div id="checkout-cart" className="lg:col-span-12 xl:col-span-4 flex flex-col bg-white border-4 border-accent rounded-2xl shadow-xl relative min-h-[450px] lg:h-full z-10">
           <div className="p-6 border-b border-border/50 bg-muted/30">
             <h3 className="font-black text-xl flex items-center gap-2 text-primary uppercase tracking-tight">
               <ShoppingCart size={24} className="text-accent" />
