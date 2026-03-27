@@ -29,6 +29,7 @@ export async function GET(request: Request) {
       OR: [
         { name: { contains: search, mode: 'insensitive' as const } },
         { code: { contains: search, mode: 'insensitive' as const } },
+        { description: { contains: search, mode: 'insensitive' as const } },
       ],
     };
 
