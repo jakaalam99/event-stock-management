@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Upload, Plus, AlertCircle, CheckCircle2, Package, Download } from 'lucide-react';
+import { Search, Upload, Plus, AlertCircle, CheckCircle2, Package, Download, Pencil, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -23,6 +23,7 @@ export default function InventoryPage() {
   const [importing, setImporting] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingSku, setEditingSku] = useState<SKU | null>(null);
   const [newSku, setNewSku] = useState({ code: '', name: '', quantity: 0, srp: 0, imageUrl: '' });
 
   const fetchSkus = async () => {
@@ -96,25 +97,47 @@ export default function InventoryPage() {
     }
   };
 
+  const handleEditClick = (sku: SKU) => {
+    setEditingSku(sku);
+    setNewSku({
+      code: sku.code,
+      name: sku.name,
+      quantity: sku.quantity,
+      srp: sku.srp,
+      imageUrl: sku.imageUrl || ''
+    });
+    setShowAddModal(true);
+  };
+
+  const closeModal = () => {
+    setShowAddModal(false);
+    setEditingSku(null);
+    setNewSku({ code: '', name: '', quantity: 0, srp: 0, imageUrl: '' });
+  };
+
   const handleAddSku = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const res = await fetch('/api/skus', {
-        method: 'POST',
+        method: editingSku ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newSku, imageUrl: newSku.imageUrl || null, lowStockThreshold: 10 }),
+        body: JSON.stringify({ 
+          ...newSku, 
+          id: editingSku?.id,
+          imageUrl: newSku.imageUrl || null, 
+          lowStockThreshold: editingSku?.lowStockThreshold || 10 
+        }),
       });
       if (res.ok) {
-        setMessage({ text: 'SKU added successfully', type: 'success' });
-        setShowAddModal(false);
-        setNewSku({ code: '', name: '', quantity: 0, srp: 0, imageUrl: '' });
+        setMessage({ text: `SKU ${editingSku ? 'updated' : 'added'} successfully`, type: 'success' });
+        closeModal();
         fetchSkus();
       } else {
         const err = await res.json();
-        setMessage({ text: err.error || 'Failed to add SKU', type: 'error' });
+        setMessage({ text: err.error || `Failed to ${editingSku ? 'update' : 'add'} SKU`, type: 'error' });
       }
     } catch (err) {
-      setMessage({ text: 'Failed to add SKU', type: 'error' });
+      setMessage({ text: `Failed to ${editingSku ? 'update' : 'add'} SKU`, type: 'error' });
     }
   };
 
@@ -174,13 +197,14 @@ export default function InventoryPage() {
                   <th className="pb-4 px-4 text-right">SRP (IDR)</th>
                   <th className="pb-4 px-4">Access Status</th>
                   <th className="pb-4 px-4 text-right">Warehouse Qty</th>
+                  <th className="pb-4 px-4 text-right">CMD</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
                 {loading ? (
-                  <tr><td colSpan={6} className="py-20 text-center text-muted-foreground italic font-black uppercase tracking-widest text-xs">Syncing Global Inventory...</td></tr>
+                  <tr><td colSpan={7} className="py-20 text-center text-muted-foreground italic font-black uppercase tracking-widest text-xs">Syncing Global Inventory...</td></tr>
                 ) : skus.length === 0 ? (
-                  <tr><td colSpan={6} className="py-20 text-center text-muted-foreground italic font-black uppercase tracking-widest text-xs">No records found in current matrix.</td></tr>
+                  <tr><td colSpan={7} className="py-20 text-center text-muted-foreground italic font-black uppercase tracking-widest text-xs">No records found in current matrix.</td></tr>
                 ) : skus.map((sku) => (
                   <tr key={sku.id} className="hover:bg-muted/30 transition-all group">
                     <td className="py-4 px-4">
@@ -198,7 +222,7 @@ export default function InventoryPage() {
                       </span>
                     </td>
                     <td className="py-4 px-4">
-                      {sku.quantity <= sku.lowStockThreshold ? (
+                      {sku.quantity <= (sku.lowStockThreshold || 10) ? (
                         <span className="px-3 py-1 rounded-full bg-error/10 text-error text-[9px] font-black uppercase tracking-tight flex items-center gap-1.5 w-fit border border-error/10">
                           <AlertCircle size={12} /> Critical
                         </span>
@@ -209,9 +233,18 @@ export default function InventoryPage() {
                       )}
                     </td>
                     <td className="py-4 px-4 text-right">
-                      <span className={`text-xl font-black font-mono scale-110 inline-block transition-transform group-hover:translate-x-[-4px] ${sku.quantity <= sku.lowStockThreshold ? 'text-error' : 'text-primary'}`}>
+                      <span className={`text-xl font-black font-mono scale-110 inline-block transition-transform group-hover:translate-x-[-4px] ${sku.quantity <= (sku.lowStockThreshold || 10) ? 'text-error' : 'text-primary'}`}>
                         {sku.quantity}
                       </span>
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <button 
+                        onClick={() => handleEditClick(sku)}
+                        className="p-2 rounded-lg bg-muted/50 hover:bg-accent hover:text-white transition-all shadow-sm"
+                        title="Edit Asset"
+                      >
+                        <Pencil size={14} />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -227,6 +260,13 @@ export default function InventoryPage() {
               <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs">Matrix is Empty.</div>
             ) : skus.map((sku) => (
               <div key={sku.id} className="group p-5 rounded-3xl border border-border/40 bg-white shadow-xl shadow-primary/5 hover:border-accent/30 transition-all flex flex-col gap-4 relative overflow-hidden">
+                <button 
+                  onClick={() => handleEditClick(sku)}
+                  className="absolute top-4 right-4 p-2 rounded-xl bg-muted/50 hover:bg-accent hover:text-white transition-all z-10"
+                >
+                  <Pencil size={14} />
+                </button>
+                
                 <div className="flex gap-4 items-start">
                   <div className="w-20 h-20 rounded-2xl bg-muted overflow-hidden border border-border/50 shrink-0">
                     {sku.imageUrl ? <img src={sku.imageUrl} alt={sku.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Package size={30} /></div>}
@@ -234,7 +274,7 @@ export default function InventoryPage() {
                   <div className="flex flex-col flex-grow justify-between py-1">
                     <div>
                       <span className="text-[10px] font-black font-mono text-accent leading-none uppercase tracking-widest">{sku.code}</span>
-                      <h3 className="text-xl font-black text-primary mt-1 leading-none">{sku.name}</h3>
+                      <h3 className="text-xl font-black text-primary mt-1 leading-none pr-8">{sku.name}</h3>
                     </div>
                     <div className="text-sm font-black text-accent mt-2">
                        {new Intl.NumberFormat('id-ID').format(sku.srp || 0)} <span className="text-[8px] font-bold text-muted-foreground uppercase ml-1">SRP</span>
@@ -245,7 +285,7 @@ export default function InventoryPage() {
                 <div className="flex justify-between items-center pt-4 border-t border-border/20">
                    <div className="flex flex-col gap-1">
                      <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">Inventory Status</span>
-                     {sku.quantity <= sku.lowStockThreshold ? (
+                     {sku.quantity <= (sku.lowStockThreshold || 10) ? (
                         <span className="text-error text-[10px] font-black uppercase flex items-center gap-1">
                           <AlertCircle size={10} /> Depleted
                         </span>
@@ -265,16 +305,16 @@ export default function InventoryPage() {
           </div>
         </div>
 
-        {/* Add SKU Modal */}
+        {/* Add/Edit SKU Modal */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[150] p-4">
             <div className="bg-white rounded-3xl p-6 md:p-8 w-full max-w-lg animate-scale-in shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-accent to-primary" />
               <div className="flex justify-between items-center mb-8">
                 <h3 className="text-3xl font-black text-primary uppercase italic tracking-tighter">
-                  New SKU <span className="text-accent">Protocol</span>
+                  {editingSku ? 'Update' : 'New'} SKU <span className="text-accent">{editingSku ? 'Record' : 'Protocol'}</span>
                 </h3>
-                <button onClick={() => setShowAddModal(false)} className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-error/10 hover:text-error transition-all font-bold">✕</button>
+                <button onClick={closeModal} className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-error/10 hover:text-error transition-all font-bold">✕</button>
               </div>
               
               <form onSubmit={handleAddSku} className="flex flex-col gap-5">
@@ -313,7 +353,7 @@ export default function InventoryPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Initial Qty</label>
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">{editingSku ? 'Set Quantity' : 'Initial Qty'}</label>
                     <input type="number" required className="input h-12 bg-muted/30 font-bold border-none" value={newSku.quantity} onChange={e => setNewSku({...newSku, quantity: parseInt(e.target.value) || 0})} />
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -323,7 +363,7 @@ export default function InventoryPage() {
                 </div>
 
                 <button type="submit" className="btn btn-primary h-14 rounded-2xl shadow-xl shadow-accent/20 font-black uppercase tracking-[0.2em] mt-2">
-                  Initialize Inventory SKU
+                  {editingSku ? 'Commit Changes' : 'Initialize Inventory SKU'}
                 </button>
               </form>
             </div>

@@ -41,3 +41,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to save SKU' }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, code, name, quantity, srp, lowStockThreshold, imageUrl } = body;
+
+    if (!id && !code) {
+      return NextResponse.json({ error: 'Missing identifier (id or code)' }, { status: 400 });
+    }
+
+    const sku = await prisma.sku.update({
+      where: id ? { id } : { code },
+      data: {
+        name,
+        code, // Allow updating code as well if needed
+        quantity: quantity !== undefined ? quantity : undefined, // Allow direct set of quantity
+        srp: srp !== undefined ? srp : undefined,
+        lowStockThreshold,
+        imageUrl
+      },
+    });
+
+    return NextResponse.json(sku);
+  } catch (error) {
+    console.error('Error updating SKU:', error);
+    return NextResponse.json({ error: 'Failed to update SKU' }, { status: 500 });
+  }
+}
