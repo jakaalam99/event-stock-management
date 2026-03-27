@@ -19,9 +19,9 @@ export default function MobileHeader() {
 
   return (
     <>
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-primary text-white flex items-center justify-between px-6 z-[110] shadow-md border-b border-white/5">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-black text-white flex items-center justify-between px-6 z-[110] shadow-md border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-accent rounded flex items-center justify-center">
+          <div className="w-8 h-8 bg-white text-black rounded flex items-center justify-center">
             <Box size={18} />
           </div>
           <span className="font-bold tracking-tight">EventStock</span>

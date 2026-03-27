@@ -6,18 +6,34 @@ export async function GET(request: Request) {
   const search = searchParams.get('search') || '';
   const sort = searchParams.get('sort') || 'name';
   const order = (searchParams.get('order') || 'asc') as 'asc' | 'desc';
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '50');
+  const skip = (page - 1) * limit;
 
   try {
-    const skus = await prisma.sku.findMany({
-      where: {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { code: { contains: search, mode: 'insensitive' } },
-        ],
-      },
-      orderBy: { [sort]: order },
+    const where = {
+      OR: [
+        { name: { contains: search, mode: 'insensitive' as const } },
+        { code: { contains: search, mode: 'insensitive' as const } },
+      ],
+    };
+
+    const [skus, total] = await Promise.all([
+      prisma.sku.findMany({
+        where,
+        orderBy: { [sort]: order },
+        skip,
+        take: limit,
+      }),
+      prisma.sku.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      data: skus,
+      total,
+      page,
+      limit,
     });
-    return NextResponse.json(skus);
   } catch (error) {
     console.error('Error fetching SKUs:', error);
     return NextResponse.json({ error: 'Failed to fetch SKUs' }, { status: 500 });

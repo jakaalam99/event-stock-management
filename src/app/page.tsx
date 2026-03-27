@@ -159,7 +159,7 @@ export default function DashboardPage() {
     const doc = new jsPDF();
     
     doc.setFontSize(22);
-    doc.setTextColor(20, 184, 166); // Accent color
+    doc.setTextColor(0, 0, 0); // Black for primary text
     doc.text("EventStock Intelligence Report", 14, 25);
     
     doc.setFontSize(10);
@@ -190,7 +190,7 @@ export default function DashboardPage() {
         `IDR ${sku.revenue.toLocaleString()}`,
         sku.percentage.toFixed(2) + '%'
       ]),
-      headStyles: { fillColor: [20, 184, 166] },
+      headStyles: { fillColor: [0, 0, 0] },
       theme: 'grid',
       styles: { fontSize: 8 }
     });
@@ -213,7 +213,7 @@ export default function DashboardPage() {
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h1 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase italic">
-              Intelligence <span className="text-accent underline decoration-4 decoration-accent/30 underline-offset-8">Hub</span>
+              Intelligence <span className="text-primary underline decoration-4 decoration-border underline-offset-8">Hub</span>
             </h1>
             <p className="text-muted-foreground text-sm md:text-lg font-medium">Real-time revenue and SKU contribution metrics</p>
           </div>
@@ -238,10 +238,10 @@ export default function DashboardPage() {
 
         {/* Hero Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          <StatCard title="Realtime Revenue" value={`IDR ${stats.totalRevenue.toLocaleString()}`} icon={DollarSign} color="text-accent" bg="bg-accent/10" highlight />
-          <StatCard title="Items Sold" value={stats.totalItemsSold} icon={ShoppingBag} color="text-success" bg="bg-success/10" />
-          <StatCard title="Active SKUs" value={stats.totalSkus} icon={Package} color="text-primary" bg="bg-primary/5" />
-          <StatCard title="Stock Alerts" value={stats.lowStockItems} icon={AlertTriangle} color="text-error" bg="bg-error/10" />
+          <StatCard title="Realtime Revenue" value={`IDR ${stats.totalRevenue.toLocaleString()}`} icon={DollarSign} color="text-black" bg="bg-muted" highlight />
+          <StatCard title="Items Sold" value={stats.totalItemsSold} icon={ShoppingBag} color="text-black" bg="bg-muted" />
+          <StatCard title="Active SKUs" value={stats.totalSkus} icon={Package} color="text-black" bg="bg-muted" />
+          <StatCard title="Stock Alerts" value={stats.lowStockItems} icon={AlertTriangle} color="text-black" bg="bg-muted" />
         </div>
 
         <div className="grid grid-cols-12 gap-6 md:gap-8">
@@ -255,7 +255,7 @@ export default function DashboardPage() {
               <div className="flex justify-between items-center mb-8 relative z-10">
                 <div>
                   <h3 className="text-2xl font-black text-primary uppercase tracking-tight flex items-center gap-2">
-                    <TrendingDown className="text-accent" size={28} />
+                    <TrendingDown className="text-primary" size={28} />
                     SKU Contribution
                   </h3>
                   <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">Ranking by Revenue Generation</p>
@@ -282,7 +282,7 @@ export default function DashboardPage() {
                     ) : stats.skuContributions.map((sku, idx) => (
                       <tr key={sku.id} className="bg-muted/30 group/row hover:bg-white hover:shadow-xl hover:shadow-primary/5 transition-all duration-300">
                         <td className="py-4 pl-4 rounded-l-2xl">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${idx === 0 ? 'bg-accent text-white shadow-lg shadow-accent/20 scale-110' : 'bg-white text-muted-foreground border border-border'}`}>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${idx === 0 ? 'bg-black text-white shadow-lg shadow-black/20 scale-110' : 'bg-white text-muted-foreground border border-border'}`}>
                             {idx + 1}
                           </div>
                         </td>
@@ -370,14 +370,14 @@ export default function DashboardPage() {
 
 function StatCard({ title, value, icon: Icon, color, bg, highlight }: { title: string; value: string | number; icon: any; color: string; bg: string; highlight?: boolean }) {
   return (
-    <div className={`card border-none shadow-xl transition-all duration-500 transform hover:-translate-y-2 group overflow-hidden ${highlight ? 'shadow-accent/5 ring-1 ring-accent/5 bg-gradient-to-br from-white to-accent/5' : 'shadow-primary/5 hover:shadow-primary/10'}`}>
+    <div className={`card border-none shadow-xl transition-all duration-500 transform hover:-translate-y-2 group overflow-hidden ${highlight ? 'shadow-primary/5 ring-1 ring-primary/10 bg-gradient-to-br from-white to-muted/30' : 'shadow-primary/5 hover:shadow-primary/10'}`}>
       <div className="flex justify-between items-start relative z-10">
         <div className="flex flex-col gap-2">
           <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{title}</span>
-          <span className={`text-2xl md:text-3xl font-black tracking-tighter transition-all duration-500 ${highlight ? 'text-accent scale-105' : 'text-primary group-hover:text-accent'}`}>{value}</span>
+          <span className={`text-2xl md:text-3xl font-black tracking-tighter transition-all duration-500 ${highlight ? 'text-black scale-105' : 'text-primary group-hover:text-black'}`}>{value}</span>
         </div>
         <div className={`p-4 rounded-2xl transition-all duration-500 group-hover:rotate-12 ${bg} ${color}`}>
-          <Icon size={28} className={highlight ? 'animate-pulse' : ''} />
+          <Icon size={28} className={highlight ? '' : ''} />
         </div>
       </div>
       <div className="mt-6 flex items-center justify-between items-center relative z-10">

@@ -53,10 +53,10 @@ export default function Navbar({ onMobileItemClick }: { onMobileItemClick?: () =
   if (!role) return null;
 
   return (
-    <nav className="h-full w-64 bg-[#0f172a] text-white p-6 flex flex-col gap-8 shadow-2xl border-r border-white/10 overflow-y-auto">
+    <nav className="h-full w-64 bg-black text-white p-6 flex flex-col gap-8 shadow-2xl border-r border-white/5 overflow-y-auto">
       <div className="flex items-center gap-3 px-2">
-        <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
-          <Box className="text-white" size={24} />
+        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+          <Box className="text-black" size={24} />
         </div>
         <h1 className="text-xl font-bold tracking-tight">EventStock</h1>
       </div>
@@ -72,8 +72,8 @@ export default function Navbar({ onMobileItemClick }: { onMobileItemClick?: () =
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
                 isActive 
-                  ? "bg-accent text-accent-foreground shadow-lg shadow-accent/20" 
-                  : "hover:bg-muted/10 text-muted-foreground hover:text-primary-foreground"
+                  ? "bg-white text-black shadow-lg shadow-white/10" 
+                  : "hover:bg-white/10 text-muted-foreground hover:text-white"
               )}
             >
               <item.icon size={20} />
@@ -86,7 +86,7 @@ export default function Navbar({ onMobileItemClick }: { onMobileItemClick?: () =
       <div className="pt-6 border-t border-muted/20">
         <div className="mb-4 px-4">
           <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Signed in as</div>
-          <div className="text-xs font-bold truncate text-accent">{role === 'ADMIN' ? 'Administrator' : 'Inventory Staff'}</div>
+          <div className="text-xs font-bold truncate text-white/50">{role === 'ADMIN' ? 'Administrator' : 'Inventory Staff'}</div>
         </div>
         <button 
           onClick={handleLogout}

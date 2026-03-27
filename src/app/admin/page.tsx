@@ -141,8 +141,8 @@ export default function AdminPage() {
 
         {/* User Management Table */}
         <div className="card p-0 overflow-hidden border-border/40">
-          <div className="p-6 border-b border-border bg-muted/20 flex items-center gap-3 font-bold text-lg">
-            <Users size={22} className="text-accent" /> Account Management
+          <div className="p-6 border-b border-border bg-muted/20 flex items-center gap-3 font-bold text-lg text-black uppercase tracking-tight">
+            <Users size={22} className="text-black" /> Account Management
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -163,8 +163,8 @@ export default function AdminPage() {
                       <select 
                         value={user.role}
                         onChange={(e) => handleUpdateRole(user, e.target.value as any)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-full border-0 focus:ring-2 focus:ring-accent ${
-                          user.role === 'ADMIN' ? 'bg-accent/10 text-accent' : 'bg-muted text-muted-foreground'
+                        className={`text-xs font-black px-4 py-1.5 rounded-full border-0 focus:ring-2 focus:ring-black/20 transition-all ${
+                          user.role === 'ADMIN' ? 'bg-black text-white' : 'bg-muted text-muted-foreground'
                         }`}
                       >
                         <option value="USER">Staff</option>
@@ -198,7 +198,7 @@ export default function AdminPage() {
               <h3 className="text-xl font-bold text-primary mt-2">Reset Analytics</h3>
               <p className="text-sm text-muted-foreground">Clears all transaction logs. SKU catalog remains intact.</p>
             </div>
-            <button disabled={!!loading} onClick={() => handleAction('reset-history')} className="btn btn-outline border-accent/20 text-accent hover:bg-accent hover:text-white mt-auto py-4">
+            <button disabled={!!loading} onClick={() => handleAction('reset-history')} className="btn btn-outline border-black text-black hover:bg-black hover:text-white mt-auto py-4 font-black uppercase tracking-widest text-[10px]">
               {loading === 'reset-history' ? 'Resetting...' : 'Reset History'}
             </button>
           </div>
@@ -211,7 +211,7 @@ export default function AdminPage() {
               <h3 className="text-xl font-bold text-primary mt-2">Clear Inventory</h3>
               <p className="text-sm text-muted-foreground">Deletes ALL SKUs and transaction records.</p>
             </div>
-            <button disabled={!!loading} onClick={() => handleAction('clear-inventory')} className="btn btn-outline border-error/20 text-error hover:bg-error hover:text-white mt-auto py-4">
+            <button disabled={!!loading} onClick={() => handleAction('clear-inventory')} className="btn btn-outline border-black text-black hover:bg-black hover:text-white mt-auto py-4 font-black uppercase tracking-widest text-[10px]">
               {loading === 'clear-inventory' ? 'Clearing...' : 'Wipe System'}
             </button>
           </div>

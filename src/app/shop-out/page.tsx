@@ -25,23 +25,44 @@ interface CartItem {
 
 export default function ShopOutPage() {
   const [skus, setSkus] = useState<SKU[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [checkingOut, setCheckingOut] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [fetchingMore, setFetchingMore] = useState(false);
 
-  const fetchSkus = async () => {
+  const fetchSkus = async (pageNum = 1, append = false) => {
     try {
-      const res = await fetch(`/api/skus?search=${searchTerm}`);
-      const data = await res.json();
-      setSkus(Array.isArray(data) ? data : []);
+      if (!append) setLoading(true);
+      else setFetchingMore(true);
+
+      const res = await fetch(`/api/skus?search=${searchTerm}&page=${pageNum}&limit=12`);
+      const result = await res.json();
+      
+      if (append) {
+        setSkus(prev => [...prev, ...(result.data || [])]);
+      } else {
+        setSkus(result.data || []);
+      }
+      
+      setHasMore((result.data?.length || 0) === 12);
+      setPage(pageNum);
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
+      setFetchingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchSkus();
+    const delayDebounce = setTimeout(() => {
+      fetchSkus(1, false);
+    }, 300);
+    return () => clearTimeout(delayDebounce);
   }, [searchTerm]);
 
   const addToCart = (sku: SKU) => {
@@ -88,7 +109,7 @@ export default function ShopOutPage() {
       if (res.ok) {
         setMessage({ text: 'Shop-out successful!', type: 'success' });
         setCart([]);
-        fetchSkus();
+        fetchSkus(1, false);
       } else {
         setMessage({ text: result.error || 'Checkout failed', type: 'error' });
       }
@@ -107,13 +128,13 @@ export default function ShopOutPage() {
         <div className="lg:col-span-12 xl:col-span-8 flex flex-col gap-6 overflow-hidden min-h-0">
           <header className="flex flex-col gap-1 items-stretch">
             <h2 className="text-3xl md:text-5xl font-black text-primary uppercase italic tracking-tighter">
-              Shop-<span className="text-accent underline decoration-4 decoration-accent/30 underline-offset-8">Out</span>
+              Shop-<span className="text-primary underline decoration-4 decoration-border underline-offset-8">Out</span>
             </h2>
             <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">Rapid Asset Deployment & Deduction</p>
           </header>
 
           <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={20} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={20} />
             <input
               type="text"
               placeholder="Query SKU code or identify item..."
@@ -123,47 +144,65 @@ export default function ShopOutPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 overflow-y-auto pr-2 pb-10 max-h-[400px] lg:max-h-none min-h-0">
-            {skus.map((sku) => (
-              <div 
-                key={sku.id} 
-                onClick={() => addToCart(sku)}
-                className={`group p-0 rounded-[2.5rem] bg-white border border-border/40 shadow-xl shadow-primary/5 hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500 cursor-pointer overflow-hidden relative ${sku.quantity <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}`}
-              >
-                {/* Image Container */}
-                <div className="h-60 w-full bg-muted/20 relative overflow-hidden">
-                   {sku.imageUrl ? (
-                     <img src={sku.imageUrl} alt={sku.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                   ) : (
-                     <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
-                        <ShoppingCart size={80} strokeWidth={1} />
-                     </div>
-                   )}
-                   <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-2xl shadow-lg border border-border/50">
-                      <span className={`text-xs font-black uppercase tracking-widest ${sku.quantity <= 10 ? 'text-error' : 'text-primary'}`}>
-                        {sku.quantity} units
-                      </span>
-                   </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-black font-mono text-accent leading-none uppercase tracking-[0.2em]">{sku.code}</span>
-                    <h3 className="text-xl font-black text-primary leading-tight group-hover:text-accent transition-colors truncate">{sku.name}</h3>
-                    <div className="text-sm font-black text-primary mt-2">
-                       IDR {sku.srp?.toLocaleString()}
+          <div className="flex-grow overflow-y-auto pr-2 pb-10 min-h-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {loading && !fetchingMore ? (
+                <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs italic">Syncing Matrix...</div>
+              ) : skus.length === 0 ? (
+                <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs italic">No Records Identified.</div>
+              ) : skus.map((sku) => (
+                <div 
+                  key={sku.id} 
+                  onClick={() => addToCart(sku)}
+                  className={`group p-0 rounded-[2.5rem] bg-white border border-border/40 shadow-xl shadow-primary/5 hover:border-primary hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden relative ${sku.quantity <= 0 ? 'opacity-50 grayscale pointer-events-none' : ''}`}
+                >
+                  {/* Image Container */}
+                  <div className="h-60 w-full bg-muted/20 relative overflow-hidden">
+                    {sku.imageUrl ? (
+                      <img src={sku.imageUrl} alt={sku.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
+                          <ShoppingCart size={80} strokeWidth={1} />
+                      </div>
+                    )}
+                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-2xl shadow-lg border border-border/50">
+                        <span className={`text-xs font-black uppercase tracking-widest ${sku.quantity <= 10 ? 'text-primary border-b-2 border-primary' : 'text-primary'}`}>
+                          {sku.quantity} units
+                        </span>
                     </div>
                   </div>
-                  
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); addToCart(sku); }}
-                    className="mt-6 w-full h-12 rounded-2xl bg-muted/30 group-hover:bg-accent group-hover:text-white transition-all font-black uppercase tracking-[0.2em] text-[10px] active:scale-95 flex items-center justify-center gap-2"
-                  >
-                    <Plus size={14} /> Add To Cart
-                  </button>
+
+                  <div className="p-6">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-black font-mono text-muted-foreground leading-none uppercase tracking-[0.2em]">{sku.code}</span>
+                      <h3 className="text-xl font-black text-primary leading-tight group-hover:text-black transition-colors">{sku.name}</h3>
+                      <div className="text-sm font-black text-primary mt-2">
+                        IDR {sku.srp?.toLocaleString()}
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); addToCart(sku); }}
+                      className="mt-6 w-full h-12 rounded-2xl bg-muted/30 group-hover:bg-primary group-hover:text-white transition-all font-black uppercase tracking-[0.2em] text-[10px] active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <Plus size={14} /> Add To Cart
+                    </button>
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            {hasMore && (
+              <div className="flex justify-center pt-10">
+                <button 
+                  onClick={() => fetchSkus(page + 1, true)}
+                  disabled={fetchingMore}
+                  className="btn btn-outline h-12 px-12 font-black uppercase text-[10px] tracking-widest bg-white shadow-xl shadow-primary/5 hover:bg-black hover:text-white transition-all disabled:opacity-50"
+                >
+                  {fetchingMore ? 'Expanding...' : 'Expand Matrix'}
+                </button>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -174,7 +213,7 @@ export default function ShopOutPage() {
               const cartElement = document.getElementById('checkout-cart');
               cartElement?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="xl:hidden fixed bottom-6 right-6 z-[200] bg-accent text-white p-4 rounded-full shadow-2xl flex items-center gap-2 animate-bounce hover:animate-none active:scale-95"
+            className="xl:hidden fixed bottom-6 right-6 z-[200] bg-primary text-white p-4 rounded-full shadow-2xl flex items-center gap-2 animate-bounce hover:animate-none active:scale-95"
           >
             <ShoppingCart size={24} />
             <span className="font-bold">{cart.length}</span>
@@ -185,9 +224,9 @@ export default function ShopOutPage() {
         <div id="checkout-cart" className="lg:col-span-12 xl:col-span-4 flex flex-col bg-white border border-border/50 rounded-2xl shadow-xl relative min-h-[450px] lg:h-full z-10 transition-all">
           <div className="p-6 border-b border-border/50 bg-muted/30">
             <h3 className="font-black text-xl flex items-center gap-2 text-primary uppercase tracking-tight">
-              <ShoppingCart size={24} className="text-accent" />
+              <ShoppingCart size={24} className="text-primary" />
               Checkout Cart
-              <span className="ml-auto bg-accent text-white text-xs px-2.5 py-1 rounded-full font-bold">{cart.length}</span>
+              <span className="ml-auto bg-primary text-white text-xs px-2.5 py-1 rounded-full font-bold">{cart.length}</span>
             </h3>
           </div>
 
@@ -204,10 +243,10 @@ export default function ShopOutPage() {
                     <div className="font-bold text-primary">{item.name}</div>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="text-[10px] font-mono font-bold text-muted-foreground bg-muted px-1 rounded">{item.code}</div>
-                      <div className="text-[10px] font-black text-accent">IDR {item.srp?.toLocaleString()}</div>
+                      <div className="text-[10px] font-black text-primary">IDR {item.srp?.toLocaleString()}</div>
                     </div>
                   </div>
-                  <button onClick={() => removeFromCart(item.skuId)} className="p-2 -mr-2 text-muted-foreground hover:text-error transition-colors">
+                  <button onClick={() => removeFromCart(item.skuId)} className="p-2 -mr-2 text-muted-foreground hover:text-black transition-colors">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -228,7 +267,7 @@ export default function ShopOutPage() {
 
           {message && (
             <div className={`mx-6 mb-4 p-4 rounded-xl flex items-center gap-3 text-sm font-black uppercase tracking-tight animate-fade-in shadow-sm ${
-              message.type === 'success' ? 'bg-success/10 text-success border border-success/20' : 'bg-error/10 text-error border border-error/20'
+              message.type === 'success' ? 'bg-black/5 text-black border border-black/10' : 'bg-muted text-muted-foreground border border-border'
             }`}>
               {message.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
               {message.text}
@@ -242,12 +281,12 @@ export default function ShopOutPage() {
             </div>
             <div className="flex justify-between text-xl font-black mb-6 border-t border-border/50 pt-4 px-1">
               <span className="text-primary tracking-tighter">TOTAL</span>
-              <span className="text-accent tracking-tighter">IDR {cart.reduce((sum, item) => sum + (item.quantity * item.srp), 0).toLocaleString()}</span>
+              <span className="text-primary tracking-tighter">IDR {cart.reduce((sum, item) => sum + (item.quantity * item.srp), 0).toLocaleString()}</span>
             </div>
             <button 
               disabled={cart.length === 0 || checkingOut}
               onClick={handleCheckout}
-              className="w-full btn btn-primary py-5 rounded-2xl shadow-xl shadow-accent/20 disabled:opacity-50 disabled:grayscale transition-all font-black uppercase tracking-widest text-sm hover:-translate-y-0.5 active:translate-y-0"
+              className="w-full btn btn-primary py-5 rounded-2xl shadow-xl shadow-primary/20 disabled:opacity-50 disabled:grayscale transition-all font-black uppercase tracking-widest text-sm hover:bg-neutral-800"
             >
               {checkingOut ? 'Processing...' : 'CONFIRM TRANSACTION'}
             </button>

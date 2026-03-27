@@ -109,7 +109,7 @@ export default function HistoryPage() {
       <div className="flex flex-col gap-6 md:gap-8 min-h-[100vh]">
         <header className="flex flex-col gap-1 items-stretch">
           <h2 className="text-3xl md:text-5xl font-black text-primary uppercase italic tracking-tighter">
-            Audit <span className="text-accent underline decoration-4 decoration-accent/30 underline-offset-8">Trail</span>
+            Audit <span className="text-primary underline decoration-4 decoration-border underline-offset-8">Trail</span>
           </h2>
           <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">Global operation logs & recovery matrix</p>
         </header>
@@ -134,9 +134,9 @@ export default function HistoryPage() {
             const reversalAction = groupTransactions.find(t => t.type === 'REVERSAL');
             
             return (
-              <div key={groupId} className={`group rounded-[2rem] bg-white border border-border/40 shadow-xl shadow-primary/5 p-0 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:border-accent/30 relative ${isCancelled ? 'opacity-70' : ''}`}>
+              <div key={groupId} className={`group rounded-[2rem] bg-white border border-border/40 shadow-xl shadow-primary/5 p-0 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:border-black/30 relative ${isCancelled ? 'opacity-70' : ''}`}>
                 <div 
-                  className={`absolute top-0 left-0 w-2 h-full transition-colors ${isCancelled ? 'bg-error/40' : 'bg-accent group-hover:bg-primary'}`}
+                  className={`absolute top-0 left-0 w-2 h-full transition-colors ${isCancelled ? 'bg-neutral-400' : 'bg-black group-hover:bg-neutral-800'}`}
                 />
                 
                 <div 
@@ -145,7 +145,7 @@ export default function HistoryPage() {
                 >
                   {/* Batch Header */}
                   <div className="flex flex-col gap-2 min-w-[220px]">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-accent uppercase tracking-[0.2em]">
+                    <div className="flex items-center gap-2 text-[10px] font-black text-black uppercase tracking-[0.2em]">
                       <Hash size={14} className="group-hover:rotate-12 transition-transform" /> {groupId.slice(0, 8)}
                     </div>
                     <div className="flex items-center gap-3">
@@ -162,7 +162,7 @@ export default function HistoryPage() {
                   <div className="flex flex-col gap-2 sm:min-w-[200px]">
                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none opacity-50">Origin Operator</span>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-muted/30 flex items-center justify-center text-primary border border-border/50 group-hover:bg-accent group-hover:text-white transition-all">
+                      <div className="w-10 h-10 rounded-2xl bg-muted/30 flex items-center justify-center text-primary border border-border/50 group-hover:bg-black group-hover:text-white transition-all">
                         <User size={18} />
                       </div>
                       <div className="flex flex-col">
@@ -177,7 +177,7 @@ export default function HistoryPage() {
                   {/* Reversal Marker */}
                   {reversalAction && (
                     <div className="flex flex-col gap-2 sm:min-w-[220px] bg-error/[0.03] p-4 rounded-2xl border border-error/10 animate-scale-in">
-                      <span className="text-[9px] font-black text-error uppercase tracking-widest leading-none flex items-center gap-1.5">
+                      <span className="text-[9px] font-black text-black uppercase tracking-widest leading-none flex items-center gap-1.5">
                         <RotateCcw size={12} /> Nullification Agent
                       </span>
                       <div className="flex items-center gap-3 text-error">
@@ -212,7 +212,7 @@ export default function HistoryPage() {
                       </button>
                     )}
                     
-                    <div className={`p-2 rounded-2xl transition-all ${isExpanded ? 'bg-accent text-white rotate-180' : 'bg-muted text-muted-foreground hover:bg-accent hover:text-white hover:scale-110'}`}>
+                    <div className={`p-2 rounded-2xl transition-all ${isExpanded ? 'bg-black text-white rotate-180' : 'bg-muted text-muted-foreground hover:bg-black hover:text-white hover:scale-110'}`}>
                       <ChevronDown size={20} />
                     </div>
                   </div>

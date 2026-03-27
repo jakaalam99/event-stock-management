@@ -25,16 +25,31 @@ export default function InventoryPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSku, setEditingSku] = useState<SKU | null>(null);
   const [newSku, setNewSku] = useState({ code: '', name: '', quantity: 0, srp: 0, imageUrl: '' });
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [fetchingMore, setFetchingMore] = useState(false);
 
-  const fetchSkus = async () => {
+  const fetchSkus = async (pageNum = 1, append = false) => {
     try {
-      const res = await fetch(`/api/skus?search=${searchTerm}`);
-      const data = await res.json();
-      setSkus(Array.isArray(data) ? data : []);
+      if (!append) setLoading(true);
+      else setFetchingMore(true);
+      
+      const res = await fetch(`/api/skus?search=${searchTerm}&page=${pageNum}&limit=20`);
+      const result = await res.json();
+      
+      if (append) {
+        setSkus(prev => [...prev, ...(result.data || [])]);
+      } else {
+        setSkus(result.data || []);
+      }
+      
+      setHasMore((result.data?.length || 0) === 20);
+      setPage(pageNum);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+      setFetchingMore(false);
     }
   };
 
@@ -64,7 +79,7 @@ export default function InventoryPage() {
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      fetchSkus();
+      fetchSkus(1, false);
     }, 300);
     return () => clearTimeout(delayDebounce);
   }, [searchTerm]);
@@ -147,7 +162,7 @@ export default function InventoryPage() {
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div className="flex flex-col gap-1">
             <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase italic">
-              Inventory <span className="text-accent underline decoration-4 decoration-accent/30 underline-offset-8">Vault</span>
+              Inventory <span className="text-primary underline decoration-4 decoration-border underline-offset-8">Vault</span>
             </h2>
             <p className="text-muted-foreground text-sm md:text-lg font-medium">Manage assets and warehouse flow</p>
           </div>
@@ -159,7 +174,7 @@ export default function InventoryPage() {
               <Upload size={16} /> <span>{importing ? '...' : 'Import'}</span>
               <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImport} disabled={importing} />
             </label>
-            <button className="btn btn-primary h-11 px-6 shadow-xl shadow-accent/20 font-black uppercase text-[10px] tracking-widest" onClick={() => setShowAddModal(true)}>
+            <button className="btn btn-primary h-11 px-6 shadow-xl shadow-black/10 font-black uppercase text-[10px] tracking-widest" onClick={() => setShowAddModal(true)}>
               <Plus size={16} /> Add SKU
             </button>
           </div>
@@ -208,8 +223,8 @@ export default function InventoryPage() {
                 ) : skus.map((sku) => (
                   <tr key={sku.id} className="hover:bg-muted/30 transition-all group">
                     <td className="py-4 px-4">
-                      <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden border border-border/50 group-hover:border-accent transition-colors">
-                        {sku.imageUrl ? <img src={sku.imageUrl} alt={sku.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Package size={20} /></div>}
+                      <div className="w-12 h-12 rounded-xl bg-muted overflow-hidden border border-border/50 group-hover:border-primary transition-colors">
+                        {sku.imageUrl ? <img src={sku.imageUrl} alt={sku.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Package size={20} /></div>}
                       </div>
                     </td>
                     <td className="py-4 px-4 font-mono text-sm font-black text-accent">{sku.code}</td>
@@ -269,7 +284,7 @@ export default function InventoryPage() {
                 
                 <div className="flex gap-4 items-start">
                   <div className="w-20 h-20 rounded-2xl bg-muted overflow-hidden border border-border/50 shrink-0">
-                    {sku.imageUrl ? <img src={sku.imageUrl} alt={sku.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Package size={30} /></div>}
+                    {sku.imageUrl ? <img src={sku.imageUrl} alt={sku.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-muted-foreground"><Package size={30} /></div>}
                   </div>
                   <div className="flex flex-col flex-grow justify-between py-1">
                     <div>
@@ -303,6 +318,18 @@ export default function InventoryPage() {
               </div>
             ))}
           </div>
+
+          {hasMore && (
+            <div className="flex justify-center pt-8">
+              <button 
+                onClick={() => fetchSkus(page + 1, true)}
+                disabled={fetchingMore}
+                className="btn btn-outline h-12 px-12 font-black uppercase text-[10px] tracking-widest bg-white shadow-xl shadow-primary/5 hover:bg-black hover:text-white transition-all disabled:opacity-50"
+              >
+                {fetchingMore ? 'Accessing More Data...' : 'Expand Matrix'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Add/Edit SKU Modal */}

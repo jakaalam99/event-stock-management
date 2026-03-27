@@ -47,14 +47,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] p-4 font-sans overflow-hidden relative">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4 font-sans overflow-hidden relative">
       {/* Decorative Elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-accent/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-black/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
 
       <div className="w-full max-w-md animate-fade-in relative z-10">
         <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20 mb-4 rotate-3 transform hover:rotate-0 transition-all duration-500">
+          <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center shadow-xl shadow-black/20 mb-4 rotate-3 transform hover:rotate-0 transition-all duration-500">
             <ShieldCheck size={36} className="text-white" />
           </div>
           <h1 className="text-3xl font-black text-primary tracking-tight">EventStock</h1>
