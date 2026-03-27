@@ -301,7 +301,7 @@ export default function ShopOutPage() {
         {cart.length > 0 && (
           <button 
             onClick={() => setIsCartOpen(!isCartOpen)}
-            className="xl:hidden fixed bottom-6 right-6 z-[120] bg-black text-white p-5 rounded-full shadow-2xl flex items-center gap-2 scale-110 active:scale-95 transition-all animate-bounce hover:animate-none"
+            className="xl:hidden fixed top-28 right-6 z-[120] bg-black text-white p-5 rounded-full shadow-2xl flex items-center gap-2 scale-110 active:scale-95 transition-all animate-bounce hover:animate-none"
           >
             <ShoppingCart size={24} />
             <span className="font-bold border-l border-white/20 pl-2">{cart.reduce((s, i) => s + i.quantity, 0)}</span>
@@ -318,7 +318,7 @@ export default function ShopOutPage() {
         )}
 
         {/* Desktop Sidebar Cart */}
-        <aside className="hidden xl:block xl:col-span-4 h-full">
+        <aside className="hidden xl:block xl:col-span-4 h-[calc(100vh-140px)] sticky top-6">
             {renderCart(true)}
         </aside>
       </div>
