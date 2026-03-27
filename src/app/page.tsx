@@ -63,76 +63,16 @@ function DashboardContent() {
 
   const fetchDashboardData = async () => {
     try {
-      const [skusRes, txRes] = await Promise.all([
-        fetch('/api/skus?limit=1000'),
-        fetch('/api/transactions')
-      ]);
-      const skusData = await skusRes.json();
-      const txsData = await txRes.json();
+      const res = await fetch('/api/dashboard/stats');
+      const data = await res.json();
       
-      const skus: SKU[] = skusData.data || [];
-      const txs: Transaction[] = Array.isArray(txsData) ? txsData : [];
-
-      // Calculate Basic Stats
-      const lowStock = skus.filter((s: SKU) => s.quantity <= s.lowStockThreshold);
-      
-      let totalRevenue = 0;
-      let totalItemsSold = 0;
-      const moveCounts: Record<string, { name: string; code: string; qty: number; val: number; stock: number }> = {};
-
-      // Initialize with all SKUs so we show current stock even for those items with no sales
-      skus.forEach(s => {
-        moveCounts[s.id] = { name: s.name, code: s.code, qty: 0, val: 0, stock: s.quantity };
-      });
-
-      txs.forEach((t: Transaction) => {
-        if (t.status === 'COMPLETED') {
-          const multiplier = t.type === 'SHOP_OUT' ? 1 : -1;
-          
-          t.items?.forEach((item: TransactionItem) => {
-            if (item.sku) {
-              const qty = item.quantity * multiplier;
-              const value = (item.sku.srp || 0) * qty;
-              
-              totalRevenue += value;
-              totalItemsSold += qty;
-
-              if (moveCounts[item.skuId]) {
-                moveCounts[item.skuId].qty += qty;
-                moveCounts[item.skuId].val += value;
-              }
-            }
-          });
-        }
-      });
-
-      const totalStock = skus.reduce((sum, s) => sum + s.quantity, 0);
-
-      const skuContributions: SkuContribution[] = Object.entries(moveCounts)
-        .map(([id, data]) => ({
-          id,
-          code: data.code,
-          name: data.name,
-          qtySold: data.qty,
-          currentStock: data.stock,
-          revenue: data.val,
-          percentage: totalRevenue > 0 ? (data.val / totalRevenue) * 100 : 0
-        }))
-        .sort((a, b) => b.revenue - a.revenue);
-
-      setStats({
-        totalSkus: skus.length,
-        lowStockItems: lowStock.length,
-        totalTransactions: txs.length,
-        totalUsers: Array.from(new Set(txs.map((t: Transaction) => t.userId))).length || 0,
-        totalRevenue,
-        totalItemsSold,
-        totalStock,
-        skuContributions,
-        recentActivity: txs.slice(0, 10),
-      });
+      if (res.ok) {
+        setStats(data);
+      } else {
+        console.error('Failed to fetch dashboard stats:', data.error);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Dashboard data fetch error:', err);
     } finally {
       setLoading(false);
     }

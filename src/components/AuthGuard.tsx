@@ -10,6 +10,16 @@ export default function AuthGuard({ children, adminOnly = false }: { children: R
 
   useEffect(() => {
     const checkAuth = async () => {
+      // 1. Check Session Cache (Faster navigation between internal pages)
+      const cachedUser = sessionStorage.getItem('auth_user_cache');
+      const cacheTime = sessionStorage.getItem('auth_user_time');
+      const now = Date.now();
+
+      if (cachedUser && cacheTime && (now - parseInt(cacheTime) < 60000)) {
+        setAuthorized(true);
+        return;
+      }
+
       try {
         const res = await fetch('/api/auth/me');
         if (res.ok) {
@@ -21,9 +31,12 @@ export default function AuthGuard({ children, adminOnly = false }: { children: R
           localStorage.setItem('store_id', data.user.storeId);
           localStorage.setItem('store_name', data.user.storeName);
 
+          // Set Session Cache
+          sessionStorage.setItem('auth_user_cache', JSON.stringify(data.user));
+          sessionStorage.setItem('auth_user_time', now.toString());
+
           // Force redirect if not admin - ONLY if adminOnly is explicitly true
           if (adminOnly === true && data.user.role !== 'ADMIN') {
-            console.log('Redirecting to shop-out because not admin');
             router.push('/shop-out');
             return;
           }
@@ -31,6 +44,7 @@ export default function AuthGuard({ children, adminOnly = false }: { children: R
           setAuthorized(true);
         } else {
           localStorage.clear();
+          sessionStorage.clear();
           router.push('/login');
         }
       } catch (err) {
