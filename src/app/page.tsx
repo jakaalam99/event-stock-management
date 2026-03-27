@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Package, TrendingDown, AlertTriangle, ArrowUpRight, Activity, DollarSign, ShoppingBag, Download, FileSpreadsheet, FileText, BarChart3 } from 'lucide-react';
+import { Package, TrendingDown, AlertTriangle, ArrowUpRight, Activity, DollarSign, ShoppingBag, Download, FileSpreadsheet, FileText, BarChart3, Box } from 'lucide-react';
 import AuthGuard from '@/components/AuthGuard';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -51,6 +51,7 @@ interface Stats {
   totalUsers: number;
   totalRevenue: number;
   totalItemsSold: number;
+  totalStock: number;
   skuContributions: SkuContribution[];
   recentActivity: Transaction[];
 }
@@ -104,6 +105,8 @@ export default function DashboardPage() {
         }
       });
 
+      const totalStock = skus.reduce((sum, s) => sum + s.quantity, 0);
+
       const skuContributions: SkuContribution[] = Object.entries(moveCounts)
         .map(([id, data]) => ({
           id,
@@ -123,6 +126,7 @@ export default function DashboardPage() {
         totalUsers: Array.from(new Set(txs.map((t: Transaction) => t.userId))).length || 0,
         totalRevenue,
         totalItemsSold,
+        totalStock,
         skuContributions,
         recentActivity: txs.slice(0, 10),
       });
@@ -172,6 +176,7 @@ export default function DashboardPage() {
       body: [
         ['Total Realtime Revenue', `IDR ${stats.totalRevenue.toLocaleString()}`],
         ['Total Items Sold (Net)', stats.totalItemsSold.toLocaleString()],
+        ['Total Global Current Stock', stats.totalStock.toLocaleString()],
         ['Active SKU Count', stats.totalSkus.toString()],
         ['Low Stock Alerts', stats.lowStockItems.toString()]
       ],
@@ -237,10 +242,11 @@ export default function DashboardPage() {
         </header>
 
         {/* Hero Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
           <StatCard title="Realtime Revenue" value={`IDR ${stats.totalRevenue.toLocaleString()}`} icon={DollarSign} color="text-black" bg="bg-muted" highlight />
           <StatCard title="Items Sold" value={stats.totalItemsSold} icon={ShoppingBag} color="text-black" bg="bg-muted" />
-          <StatCard title="Active SKUs" value={stats.totalSkus} icon={Package} color="text-black" bg="bg-muted" />
+          <StatCard title="Total Stock" value={stats.totalStock} icon={Package} color="text-black" bg="bg-muted" />
+          <StatCard title="Active SKUs" value={stats.totalSkus} icon={Box} color="text-black" bg="bg-muted" />
           <StatCard title="Stock Alerts" value={stats.lowStockItems} icon={AlertTriangle} color="text-black" bg="bg-muted" />
         </div>
 
