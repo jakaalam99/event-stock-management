@@ -62,13 +62,13 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       const [skusRes, txRes] = await Promise.all([
-        fetch('/api/skus'),
+        fetch('/api/skus?limit=1000'),
         fetch('/api/transactions')
       ]);
       const skusData = await skusRes.json();
       const txsData = await txRes.json();
       
-      const skus: SKU[] = Array.isArray(skusData) ? skusData : [];
+      const skus: SKU[] = skusData.data || [];
       const txs: Transaction[] = Array.isArray(txsData) ? txsData : [];
 
       // Calculate Basic Stats
