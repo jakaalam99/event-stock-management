@@ -22,7 +22,8 @@ export async function GET() {
       totalTransactions,
       totalStock,
       recentActivity,
-      salesStats
+      salesStats,
+      allSkus
     ] = await Promise.all([
       prisma.sku.count({ where: { storeId } }),
       prisma.sku.count({ where: { storeId, quantity: { lte: 10 } } }), // Simplified for compatibility
@@ -42,16 +43,20 @@ export async function GET() {
       }),
       // Aggregate sales data
       prisma.transactionItem.findMany({
-        where: { 
-            transaction: { 
-                storeId, 
+        where: {
+            transaction: {
+                storeId,
                 status: 'COMPLETED',
-                type: 'SHOP_OUT' 
-            } 
+                type: 'SHOP_OUT'
+            }
         },
         include: {
             sku: { select: { id: true, name: true, code: true, srp: true, quantity: true } }
         }
+      }),
+      prisma.sku.findMany({
+        where: { storeId },
+        select: { id: true, name: true, code: true, quantity: true, srp: true }
       })
     ]);
 
@@ -60,22 +65,25 @@ export async function GET() {
     let totalItemsSold = 0;
     const contributionsMap: Record<string, any> = {};
 
+    // 1. Pre-populate with all SKUs (to show items with 0 sales)
+    (allSkus as any[]).forEach(sku => {
+      contributionsMap[sku.id] = {
+        id: sku.id,
+        code: sku.code,
+        name: sku.name,
+        qtySold: 0,
+        currentStock: sku.quantity,
+        revenue: 0
+      };
+    });
+
+    // 2. Update with sales data
     (salesStats as any[]).forEach(item => {
         const qty = item.quantity;
         const rev = qty * (item.sku?.srp || 0);
         totalRevenue += rev;
         totalItemsSold += qty;
 
-        if (item.sku && !contributionsMap[item.skuId]) {
-            contributionsMap[item.skuId] = {
-                id: item.skuId,
-                code: item.sku.code,
-                name: item.sku.name,
-                qtySold: 0,
-                currentStock: item.sku.quantity,
-                revenue: 0
-            };
-        }
         if (contributionsMap[item.skuId]) {
             contributionsMap[item.skuId].qtySold += qty;
             contributionsMap[item.skuId].revenue += rev;
