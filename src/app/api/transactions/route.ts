@@ -1,10 +1,24 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/lib/auth';
+
+async function getSessionStoreId() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('auth_token')?.value;
+  if (!token) return null;
+  const decoded = verifyToken(token) as any;
+  return decoded?.storeId || null;
+}
 
 export async function GET() {
+  const storeId = await getSessionStoreId();
+  if (!storeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const transactions = await prisma.transaction.findMany({
+      where: { storeId },
       include: {
         user: true, // Get user name/email
         items: {
@@ -23,6 +37,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const storeId = await getSessionStoreId();
+  if (!storeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const body = await request.json();
     const { items, userId, userName } = body; // items: [{ skuId: string, quantity: number }]
@@ -39,12 +56,12 @@ export async function POST(request: Request) {
       for (const item of items) {
         // Use raw SQL for row-level locking (SELECT ... FOR UPDATE)
         const [sku] = await tx.$queryRawUnsafe<any[]>(
-          `SELECT id, quantity, name FROM "Sku" WHERE id = $1 FOR UPDATE`,
+          `SELECT id, quantity, name, "storeId" FROM "Sku" WHERE id = $1 FOR UPDATE`,
           item.skuId
         );
 
-        if (!sku) {
-          throw new Error(`SKU with ID ${item.skuId} not found`);
+        if (!sku || sku.storeId !== storeId) {
+          throw new Error(`SKU with ID ${item.skuId} not found or unauthorized`);
         }
 
         if (sku.quantity < item.quantity) {
@@ -69,6 +86,7 @@ export async function POST(request: Request) {
           userId, // Foreign Key to User
           type: 'SHOP_OUT',
           status: 'COMPLETED',
+          storeId, // Restrict to store
           items: {
             create: items.map((item: any) => ({
               skuId: item.skuId,

@@ -36,6 +36,8 @@ export default function LoginPage() {
       localStorage.setItem('user_role', data.user.role);
       localStorage.setItem('user_name', data.user.name);
       localStorage.setItem('user_id', data.user.id);
+      localStorage.setItem('store_id', data.user.storeId);
+      localStorage.setItem('store_name', data.user.storeName);
       
       router.push('/');
       router.refresh();
@@ -54,11 +56,11 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md animate-fade-in relative z-10">
         <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center shadow-xl shadow-black/20 mb-4 rotate-3 transform hover:rotate-0 transition-all duration-500">
+          <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center shadow-2xl shadow-accent/30 mb-4 rotate-3 transform hover:rotate-0 transition-all duration-500">
             <ShieldCheck size={36} className="text-white" />
           </div>
-          <h1 className="text-3xl font-black text-primary tracking-tight">EventStock</h1>
-          <p className="text-muted-foreground font-medium mt-1">Enterprise Inventory Management</p>
+          <h1 className="text-4xl font-black text-primary tracking-tighter uppercase italic">Event<span className="text-accent underline decoration-4 decoration-accent/20 underline-offset-8">Stock</span></h1>
+          <p className="text-slate-500 font-bold uppercase tracking-[0.2em] mt-3 text-[10px] border-y border-slate-100 py-1 px-4">Inventory Management System</p>
         </div>
 
         <div className="card p-8 md:p-10 shadow-2xl shadow-primary/5 bg-white/80 backdrop-blur-xl border border-white">
@@ -117,10 +119,10 @@ export default function LoginPage() {
             <button 
               type="submit" 
               disabled={loading}
-              className="btn btn-primary h-14 rounded-xl text-base font-black uppercase tracking-widest mt-4 shadow-lg shadow-primary/10 hover:shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group"
+              className="btn btn-primary h-16 bg-accent rounded-2xl text-sm font-black uppercase tracking-[0.2em] mt-4 shadow-2xl shadow-accent/20 hover:shadow-accent/40 hover:-translate-y-1 active:translate-y-0 transition-all duration-300 relative overflow-hidden group border-none"
             >
-              <span className={`flex items-center justify-center gap-2 ${loading ? 'opacity-0' : 'opacity-100'} transition-opacity`}>
-                Sign In <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              <span className={`flex items-center justify-center gap-3 ${loading ? 'opacity-0' : 'opacity-100'} transition-opacity`}>
+                Login <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
               </span>
               {loading && <Loader2 className="animate-spin absolute" size={24} />}
             </button>

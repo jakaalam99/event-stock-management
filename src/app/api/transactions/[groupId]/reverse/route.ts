@@ -1,19 +1,32 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { verifyToken } from '@/lib/auth';
+
+async function getSessionStoreId() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('auth_token')?.value;
+  if (!token) return null;
+  const decoded = verifyToken(token) as any;
+  return decoded?.storeId || null;
+}
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ groupId: string }> }
 ) {
+  const storeId = await getSessionStoreId();
+  if (!storeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { groupId } = await params;
     const body = await request.json();
     const { userId, userName } = body;
 
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Find the original transaction items
+      // 1. Find the original transaction items - strictly scoped by store
       const originalTransactions = await tx.transaction.findMany({
-        where: { groupId, type: 'SHOP_OUT', status: 'COMPLETED' },
+        where: { groupId, storeId, type: 'SHOP_OUT', status: 'COMPLETED' },
         include: { items: true },
       });
 
@@ -39,13 +52,14 @@ export async function POST(
         });
       }
 
-      // 4. Create a reversal record for audit
+      // 4. Create a reversal record for audit - with storeId
       const reversalRecord = await tx.transaction.create({
         data: {
           groupId,
           userId, // Foreign Key
           type: 'REVERSAL',
           status: 'COMPLETED',
+          storeId,
         },
       });
 

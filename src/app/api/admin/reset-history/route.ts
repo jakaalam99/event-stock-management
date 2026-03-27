@@ -17,10 +17,10 @@ export async function DELETE() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Reset History: Clear transactions but keep SKUs
+    // Reset History: Clear transactions but keep SKUs in current store
     await prisma.$transaction([
-      prisma.transactionItem.deleteMany({}),
-      prisma.transaction.deleteMany({}),
+      prisma.transactionItem.deleteMany({ where: { transaction: { storeId: decoded.storeId } } }),
+      prisma.transaction.deleteMany({ where: { storeId: decoded.storeId } }),
     ]);
 
     return NextResponse.json({ message: 'Transaction history reset successfully' });

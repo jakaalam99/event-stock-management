@@ -32,6 +32,7 @@ export default function HistoryPage() {
   const [reversingId, setReversingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [storeName, setStoreName] = useState<string | null>(null);
 
   const fetchHistory = async () => {
     try {
@@ -48,6 +49,7 @@ export default function HistoryPage() {
   useEffect(() => {
     fetchHistory();
     setRole(localStorage.getItem('user_role'));
+    setStoreName(localStorage.getItem('store_name'));
   }, []);
 
   const toggleGroup = (groupId: string) => {
@@ -108,10 +110,10 @@ export default function HistoryPage() {
     <AuthGuard>
       <div className="flex flex-col gap-6 md:gap-8 min-h-[100vh]">
         <header className="flex flex-col gap-1 items-stretch">
-          <h2 className="text-3xl md:text-5xl font-black text-primary uppercase italic tracking-tighter">
-            Audit <span className="text-primary underline decoration-4 decoration-border underline-offset-8">Trail</span>
+          <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase italic">
+            Transaction <span className="text-accent underline decoration-4 decoration-accent/30 underline-offset-8">History</span>
           </h2>
-          <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">Global operation logs & recovery matrix</p>
+          <p className="text-slate-500 text-sm font-bold uppercase tracking-[0.2em] mt-2 border-l-4 border-accent pl-4">{storeName || 'Record of Operations'}</p>
         </header>
         
         {message && (
@@ -134,9 +136,9 @@ export default function HistoryPage() {
             const reversalAction = groupTransactions.find(t => t.type === 'REVERSAL');
             
             return (
-              <div key={groupId} className={`group rounded-[2rem] bg-white border border-border/40 shadow-xl shadow-primary/5 p-0 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:border-black/30 relative ${isCancelled ? 'opacity-70' : ''}`}>
+              <div key={groupId} className={`group rounded-[2rem] bg-white border border-border/40 shadow-premium p-0 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:border-accent/30 relative ${isCancelled ? 'opacity-70' : ''}`}>
                 <div 
-                  className={`absolute top-0 left-0 w-2 h-full transition-colors ${isCancelled ? 'bg-neutral-400' : 'bg-black group-hover:bg-neutral-800'}`}
+                  className={`absolute top-0 left-0 w-2 h-full transition-colors ${isCancelled ? 'bg-slate-300' : 'bg-accent group-hover:bg-slate-900'}`}
                 />
                 
                 <div 
@@ -150,7 +152,7 @@ export default function HistoryPage() {
                     </div>
                     <div className="flex items-center gap-3">
                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] border shadow-sm ${isCancelled ? 'bg-error/5 text-error border-error/10' : 'bg-success/5 text-success border-success/10'}`}>
-                         {isCancelled ? 'Nullified' : 'Active Log'}
+                         {isCancelled ? 'Cancelled' : 'Completed'}
                        </span>
                        <span className="text-sm font-black text-primary">
                          {groupTransactions.flatMap(t => t.items).length} Assets
@@ -160,7 +162,7 @@ export default function HistoryPage() {
 
                   {/* Operator Info */}
                   <div className="flex flex-col gap-2 sm:min-w-[200px]">
-                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none opacity-50">Origin Operator</span>
+                    <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest leading-none opacity-50">Processed By</span>
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-2xl bg-muted/30 flex items-center justify-center text-primary border border-border/50 group-hover:bg-black group-hover:text-white transition-all">
                         <User size={18} />
@@ -178,7 +180,7 @@ export default function HistoryPage() {
                   {reversalAction && (
                     <div className="flex flex-col gap-2 sm:min-w-[220px] bg-error/[0.03] p-4 rounded-2xl border border-error/10 animate-scale-in">
                       <span className="text-[9px] font-black text-black uppercase tracking-widest leading-none flex items-center gap-1.5">
-                        <RotateCcw size={12} /> Nullification Agent
+                        <RotateCcw size={12} /> Reversal Action
                       </span>
                       <div className="flex items-center gap-3 text-error">
                         <div className="w-8 h-8 rounded-xl bg-error/10 flex items-center justify-center border border-error/10">
@@ -225,9 +227,9 @@ export default function HistoryPage() {
                       <table className="w-full mt-6">
                         <thead>
                           <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground border-b border-border/30">
-                            <th className="pb-3 text-left w-32">Ident Code</th>
-                            <th className="pb-3 text-left">Asset Designation</th>
-                            <th className="pb-3 text-right">Delta</th>
+                            <th className="pb-3 text-left w-32">SKU Code</th>
+                            <th className="pb-3 text-left">Product Name</th>
+                            <th className="pb-3 text-right">Qty</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border/10">

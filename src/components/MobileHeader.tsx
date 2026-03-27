@@ -10,9 +10,12 @@ export default function MobileHeader() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
+  const [storeName, setStoreName] = useState<string | null>(null);
+
   // Close sidebar on navigation
   useEffect(() => {
     setIsOpen(false);
+    setStoreName(localStorage.getItem('store_name'));
   }, [pathname]);
 
   if (pathname === '/login') return null;
@@ -24,7 +27,10 @@ export default function MobileHeader() {
           <div className="w-8 h-8 bg-white text-black rounded flex items-center justify-center">
             <Box size={18} />
           </div>
-          <span className="font-bold tracking-tight">EventStock</span>
+          <div className="flex flex-col">
+            <span className="font-bold tracking-tight leading-none">EventStock</span>
+            {storeName && <span className="text-[9px] font-black uppercase text-white/50 tracking-widest mt-1">{storeName}</span>}
+          </div>
         </div>
         
         <button 

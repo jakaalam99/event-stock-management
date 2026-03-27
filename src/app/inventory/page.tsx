@@ -28,6 +28,9 @@ export default function InventoryPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [fetchingMore, setFetchingMore] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [bulkEditing, setBulkEditing] = useState(false);
+  const [storeName, setStoreName] = useState<string | null>(null);
 
   const fetchSkus = async (pageNum = 1, append = false) => {
     try {
@@ -77,9 +80,38 @@ export default function InventoryPage() {
     XLSX.writeFile(wb, 'import_template.xlsx');
   };
 
+  const exportCurrentStock = async () => {
+    try {
+      setExporting(true);
+      // Fetch more items for export (limit 1000 for convenience)
+      const res = await fetch(`/api/skus?limit=1000`);
+      const result = await res.json();
+      const allSkus = result.data || [];
+
+      const data = allSkus.map((sku: SKU) => ({
+        SKU: sku.code,
+        Name: sku.name,
+        Quantity: sku.quantity,
+        SRP: sku.srp,
+        Threshold: sku.lowStockThreshold
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Current Inventory');
+      XLSX.writeFile(wb, `${storeName || 'Inventory'}_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      setMessage({ text: 'Export failed', type: 'error' });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       fetchSkus(1, false);
+      setStoreName(localStorage.getItem('store_name'));
     }, 300);
     return () => clearTimeout(delayDebounce);
   }, [searchTerm]);
@@ -108,6 +140,34 @@ export default function InventoryPage() {
       setMessage({ text: 'Import failed', type: 'error' });
     } finally {
       setImporting(false);
+      setTimeout(() => setMessage(null), 5000);
+    }
+  };
+
+  const handleBulkEdit = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setBulkEditing(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/skus/bulk-edit', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setMessage({ text: result.message, type: 'success' });
+        fetchSkus();
+      } else {
+        setMessage({ text: result.error, type: 'error' });
+      }
+    } catch (err) {
+      setMessage({ text: 'Reconciliation failed', type: 'error' });
+    } finally {
+      setBulkEditing(false);
       setTimeout(() => setMessage(null), 5000);
     }
   };
@@ -162,20 +222,27 @@ export default function InventoryPage() {
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div className="flex flex-col gap-1">
             <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase italic">
-              Inventory <span className="text-primary underline decoration-4 decoration-border underline-offset-8">Vault</span>
+              Inventory <span className="text-accent underline decoration-4 decoration-accent/30 underline-offset-8">List</span>
             </h2>
-            <p className="text-muted-foreground text-sm md:text-lg font-medium">Manage assets and warehouse flow</p>
+            <p className="text-slate-500 text-sm md:text-lg font-bold uppercase tracking-[0.2em] mt-2 border-l-4 border-accent pl-4">{storeName || 'Stock Management'}</p>
           </div>
           <div className="flex flex-wrap gap-2 md:gap-3 w-full lg:w-auto">
             <button className="btn btn-outline h-11 bg-white hover:bg-muted font-black uppercase text-[10px] tracking-widest px-4 shadow-sm" onClick={downloadTemplate}>
               <Download size={16} /> Template
             </button>
-            <label className="btn btn-outline h-11 bg-white cursor-pointer relative overflow-hidden font-black uppercase text-[10px] tracking-widest px-4 shadow-sm">
+            <button className="btn btn-outline h-11 bg-white hover:bg-muted font-black uppercase text-[10px] tracking-widest px-4 shadow-sm" onClick={exportCurrentStock} disabled={exporting}>
+              <Download size={16} /> <span>{exporting ? '...' : 'Export'}</span>
+            </button>
+            <label className="btn btn-outline h-11 bg-white cursor-pointer relative overflow-hidden font-black uppercase text-[10px] tracking-widest px-4 shadow-sm" title="Add new items (Additive)">
               <Upload size={16} /> <span>{importing ? '...' : 'Import'}</span>
               <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImport} disabled={importing} />
             </label>
-            <button className="btn btn-primary h-11 px-6 shadow-xl shadow-black/10 font-black uppercase text-[10px] tracking-widest" onClick={() => setShowAddModal(true)}>
-              <Plus size={16} /> Add SKU
+            <label className="btn btn-outline h-11 bg-black text-white cursor-pointer relative overflow-hidden font-black uppercase text-[10px] tracking-widest px-4 shadow-sm" title="Reconcile existing stock (Absolute Set)">
+              <Upload size={16} stroke="white" /> <span>{bulkEditing ? '...' : 'Update Stock'}</span>
+              <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleBulkEdit} disabled={bulkEditing} />
+            </label>
+            <button className="btn btn-primary h-11 px-6 shadow-xl shadow-accent/20 font-black uppercase text-[10px] tracking-widest bg-accent hover:bg-slate-900" onClick={() => setShowAddModal(true)}>
+              <Plus size={16} /> Add New Product
             </button>
           </div>
         </div>
@@ -189,7 +256,7 @@ export default function InventoryPage() {
           </div>
         )}
 
-        <div className="card shadow-2xl shadow-primary/5 p-4 md:p-8 flex flex-col gap-6 md:gap-8">
+        <div className="card shadow-premium p-4 md:p-8 flex flex-col gap-6 md:gap-8 border-none bg-white/80 backdrop-blur-sm">
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={20} />
             <input
@@ -208,18 +275,18 @@ export default function InventoryPage() {
                 <tr className="border-b border-border text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                   <th className="pb-4 px-4">IMG</th>
                   <th className="pb-4 px-4">SKU Code</th>
-                  <th className="pb-4 px-4">Item Identity</th>
+                  <th className="pb-4 px-4">Product Name</th>
                   <th className="pb-4 px-4 text-right">SRP (IDR)</th>
-                  <th className="pb-4 px-4">Access Status</th>
-                  <th className="pb-4 px-4 text-right">Warehouse Qty</th>
-                  <th className="pb-4 px-4 text-right">CMD</th>
+                  <th className="pb-4 px-4">Status</th>
+                  <th className="pb-4 px-4 text-right">Stock Level</th>
+                  <th className="pb-4 px-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
                 {loading ? (
-                  <tr><td colSpan={7} className="py-20 text-center text-muted-foreground italic font-black uppercase tracking-widest text-xs">Syncing Global Inventory...</td></tr>
+                  <tr><td colSpan={7} className="py-20 text-center text-muted-foreground italic font-black uppercase tracking-widest text-xs">Loading Stock...</td></tr>
                 ) : skus.length === 0 ? (
-                  <tr><td colSpan={7} className="py-20 text-center text-muted-foreground italic font-black uppercase tracking-widest text-xs">No records found in current matrix.</td></tr>
+                  <tr><td colSpan={7} className="py-20 text-center text-muted-foreground italic font-black uppercase tracking-widest text-xs">No records found.</td></tr>
                 ) : skus.map((sku) => (
                   <tr key={sku.id} className="hover:bg-muted/30 transition-all group">
                     <td className="py-4 px-4">
@@ -272,7 +339,7 @@ export default function InventoryPage() {
             {loading ? (
               <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs">Accessing Data...</div>
             ) : skus.length === 0 ? (
-              <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs">Matrix is Empty.</div>
+              <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs">No products found.</div>
             ) : skus.map((sku) => (
               <div key={sku.id} className="group p-5 rounded-3xl border border-border/40 bg-white shadow-xl shadow-primary/5 hover:border-accent/30 transition-all flex flex-col gap-4 relative overflow-hidden">
                 <button 
@@ -326,7 +393,7 @@ export default function InventoryPage() {
                 disabled={fetchingMore}
                 className="btn btn-outline h-12 px-12 font-black uppercase text-[10px] tracking-widest bg-white shadow-xl shadow-primary/5 hover:bg-black hover:text-white transition-all disabled:opacity-50"
               >
-                {fetchingMore ? 'Accessing More Data...' : 'Expand Matrix'}
+                {fetchingMore ? 'Loading...' : 'Load More'}
               </button>
             </div>
           )}

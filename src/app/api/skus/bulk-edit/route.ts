@@ -30,28 +30,47 @@ export async function POST(request: Request) {
     const worksheet = workbook.Sheets[firstSheetName];
     const data = XLSX.utils.sheet_to_json<any>(worksheet);
 
-    // Validation and Bulk Upsert
-    const results = [];
+    let updatedCount = 0;
+    let errorCount = 0;
+
+    // Reconciliation Loop: Absolute Set
     for (const row of data) {
       const code = String(row.SKU || row.code || '').trim();
-      const name = String(row.Name || row.name || '').trim();
       const quantity = parseInt(String(row.Quantity || row.quantity || '0'));
-      const srp = parseFloat(String(row.SRP || row.srp || '0'));
-      const threshold = parseInt(String(row.Threshold || row.threshold || '10'));
+      
+      // We only update SRP or Name if they are present in the row, 
+      // but we EXPLICITLY do NOT touch imageUrl to prevent deletion.
+      const name = row.Name || row.name;
+      const srp = row.SRP || row.srp ? parseFloat(row.SRP || row.srp) : undefined;
 
-      if (!code || !name) continue;
+      if (!code) continue;
 
-      const result = await prisma.sku.upsert({
-        where: { code_storeId: { code, storeId } },
-        update: { name, quantity: { increment: quantity }, srp, lowStockThreshold: threshold, imageUrl: row.imageUrl || null },
-        create: { code, name, quantity, srp, lowStockThreshold: threshold, imageUrl: row.imageUrl || null, storeId },
-      });
-      results.push(result);
+      try {
+        await prisma.sku.update({
+          where: { 
+            code_storeId: { code, storeId } 
+          },
+          data: {
+            quantity: quantity, // ABSOLUTE SET
+            name: name || undefined,
+            srp: srp !== undefined ? srp : undefined,
+            // imageUrl is NOT included here to preserve it.
+          },
+        });
+        updatedCount++;
+      } catch (err) {
+        console.error(`Bulk edit failed for SKU ${code}:`, err);
+        errorCount++;
+      }
     }
 
-    return NextResponse.json({ message: `Successfully processed ${results.length} SKUs`, count: results.length });
+    return NextResponse.json({ 
+      message: `Reconciliation complete. ${updatedCount} SKUs updated. ${errorCount} errors.`, 
+      updated: updatedCount,
+      errors: errorCount
+    });
   } catch (error: any) {
-    console.error('Import failed:', error);
-    return NextResponse.json({ error: error.message || 'Import failed' }, { status: 500 });
+    console.error('Bulk edit failed:', error);
+    return NextResponse.json({ error: error.message || 'Operation failed' }, { status: 500 });
   }
 }

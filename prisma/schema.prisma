@@ -3,13 +3,24 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Store {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users        User[]
+  skus         Sku[]
+  transactions Transaction[]
 }
 
 model Sku {
   id                String            @id @default(cuid())
-  code              String            @unique
+  code              String
   name              String
   description       String?
   quantity          Int               @default(0)
@@ -19,6 +30,11 @@ model Sku {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   transactionItems  TransactionItem[]
+
+  storeId           String
+  store             Store             @relation(fields: [storeId], references: [id])
+
+  @@unique([code, storeId])
 }
 
 model User {
@@ -29,6 +45,9 @@ model User {
   role         UserRole      @default(USER)
   createdAt    DateTime      @default(now())
   transactions Transaction[]
+
+  storeId      String
+  store        Store         @relation(fields: [storeId], references: [id])
 }
 
 enum UserRole {
@@ -45,6 +64,9 @@ model Transaction {
   status    TransactionStatus @default(COMPLETED)
   createdAt DateTime          @default(now())
   items     TransactionItem[]
+
+  storeId   String
+  store     Store             @relation(fields: [storeId], references: [id])
 }
 
 model TransactionItem {

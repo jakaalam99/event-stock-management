@@ -20,6 +20,7 @@ export async function GET() {
 
   try {
     const users = await prisma.user.findMany({
+      where: { storeId: admin.storeId },
       select: {
         id: true,
         email: true,
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
         password: hashedPassword,
         name,
         role: role || 'USER',
+        storeId: admin.storeId,
       },
     });
 

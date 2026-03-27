@@ -23,9 +23,11 @@ export default function Navbar({ onMobileItemClick }: { onMobileItemClick?: () =
   const pathname = usePathname();
   const router = useRouter();
   const [role, setRole] = useState<string | null>(null);
+  const [storeName, setStoreName] = useState<string | null>(null);
 
   useEffect(() => {
     setRole(localStorage.getItem('user_role'));
+    setStoreName(localStorage.getItem('store_name'));
   }, [pathname]);
 
   if (pathname === '/login') return null;
@@ -55,10 +57,10 @@ export default function Navbar({ onMobileItemClick }: { onMobileItemClick?: () =
   return (
     <nav className="h-full w-64 bg-black text-white p-6 flex flex-col gap-8 shadow-2xl border-r border-white/5 overflow-y-auto">
       <div className="flex items-center gap-3 px-2">
-        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-          <Box className="text-black" size={24} />
+        <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center shadow-lg shadow-accent/20">
+          <Box className="text-white" size={24} />
         </div>
-        <h1 className="text-xl font-bold tracking-tight">EventStock</h1>
+        <h1 className="text-xl font-black tracking-tighter uppercase italic">Event<span className="text-accent underline decoration-2 underline-offset-4">Stock</span></h1>
       </div>
 
       <div className="flex flex-col gap-2 flex-grow">
@@ -70,30 +72,33 @@ export default function Navbar({ onMobileItemClick }: { onMobileItemClick?: () =
               href={item.href}
               onClick={() => onMobileItemClick?.()}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
+                "flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300",
                 isActive 
-                  ? "bg-white text-black shadow-lg shadow-white/10" 
-                  : "hover:bg-white/10 text-muted-foreground hover:text-white"
+                  ? "bg-accent text-white shadow-xl shadow-accent/30 scale-[1.02]" 
+                  : "hover:bg-white/5 text-slate-400 hover:text-white"
               )}
             >
-              <item.icon size={20} />
-              <span className="font-medium">{item.label}</span>
+              <item.icon size={20} className={isActive ? "text-white" : "text-slate-500"} />
+              <span className="font-bold text-sm tracking-wide">{item.label}</span>
             </Link>
           );
         })}
       </div>
 
-      <div className="pt-6 border-t border-muted/20">
-        <div className="mb-4 px-4">
-          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Signed in as</div>
-          <div className="text-xs font-bold truncate text-white/50">{role === 'ADMIN' ? 'Administrator' : 'Inventory Staff'}</div>
+      <div className="pt-6 border-t border-white/5">
+        <div className="mb-6 px-4 py-3 bg-white/5 rounded-2xl border border-white/5">
+          <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1.5">{storeName || 'Current Store'}</div>
+          <div className="text-xs font-black text-white/80 flex items-center gap-2">
+            <Shield size={12} className={role === 'ADMIN' ? "text-accent" : "text-emerald-500"} />
+            {role === 'ADMIN' ? 'Site Administrator' : 'Operations Staff'}
+          </div>
         </div>
         <button 
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg w-full text-muted-foreground hover:text-error hover:bg-error/10 transition-all duration-200"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl w-full text-slate-500 hover:text-error hover:bg-error/10 transition-all duration-300 group"
         >
-          <LogOut size={20} />
-          <span className="font-medium">Sign Out</span>
+          <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
+          <span className="font-black text-[10px] uppercase tracking-widest">Logout</span>
         </button>
       </div>
     </nav>

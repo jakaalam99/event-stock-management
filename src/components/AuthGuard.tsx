@@ -10,38 +10,49 @@ export default function AuthGuard({ children, adminOnly = false }: { children: R
 
   useEffect(() => {
     const checkAuth = async () => {
-      const role = localStorage.getItem('user_role');
-      
-      if (!role) {
-        // Double check with server just in case
-        try {
-          const res = await fetch('/api/auth/me');
-          if (res.ok) {
-            const data = await res.json();
-            localStorage.setItem('user_role', data.user.role);
-            localStorage.setItem('user_name', data.user.name);
-            localStorage.setItem('user_id', data.user.userId);
-            setAuthorized(true);
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          // Sync all metadata
+          localStorage.setItem('user_role', data.user.role);
+          localStorage.setItem('user_name', data.user.name);
+          localStorage.setItem('user_id', data.user.userId);
+          localStorage.setItem('store_id', data.user.storeId);
+          localStorage.setItem('store_name', data.user.storeName);
+
+          // Force redirect if not admin - ONLY if adminOnly is explicitly true
+          if (adminOnly === true && data.user.role !== 'ADMIN') {
+            console.log('Redirecting to shop-out because not admin');
+            router.push('/shop-out');
             return;
           }
-        } catch (e) {}
-        
-        router.push('/login');
-        return;
-      }
 
-      if (adminOnly && role !== 'ADMIN') {
-        router.push('/shop-out'); // Redirect staff away from admin pages
-        return;
+          setAuthorized(true);
+        } else {
+          localStorage.clear();
+          router.push('/login');
+        }
+      } catch (err) {
+        console.error('Auth verification failed:', err);
+        // Fallback to local storage if network fails
+        const localRole = localStorage.getItem('user_role');
+        if (localRole) {
+          if (adminOnly && localRole !== 'ADMIN') {
+            router.push('/shop-out');
+          } else {
+            setAuthorized(true);
+          }
+        } else {
+          router.push('/login');
+        }
       }
-
-      setAuthorized(true);
     };
 
     checkAuth();
   }, [router, pathname, adminOnly]);
 
-  if (!authorized) return <div className="flex items-center justify-center min-h-[50vh] text-muted-foreground font-medium animate-pulse">Verifying Permissions...</div>;
+  if (!authorized) return <div className="flex items-center justify-center min-h-[50vh] text-muted-foreground font-medium animate-pulse">Checking Access...</div>;
 
   return <>{children}</>;
 }

@@ -35,6 +35,7 @@ export default function ShopOutPage() {
   const [fetchingMore, setFetchingMore] = useState(false);
   const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [storeName, setStoreName] = useState<string | null>(null);
 
   const fetchSkus = async (pageNum = 1, append = false) => {
     try {
@@ -63,6 +64,7 @@ export default function ShopOutPage() {
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       fetchSkus(1, false);
+      setStoreName(localStorage.getItem('store_name'));
     }, 300);
     return () => clearTimeout(delayDebounce);
   }, [searchTerm]);
@@ -140,14 +142,39 @@ export default function ShopOutPage() {
         )}
       </div>
 
-      <div className="flex-grow overflow-y-auto p-6 flex flex-col gap-4">
+      <div className="p-6 bg-white border-b border-border shadow-sm z-30">
+        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3 px-1">
+          <span>Total Items Selected</span>
+          <span className="text-primary">{cart.reduce((sum, item) => sum + item.quantity, 0)} units</span>
+        </div>
+        <div className="flex justify-between text-2xl font-black mb-6 border-t border-border pt-4 px-1">
+          <span className="text-primary tracking-tighter uppercase italic">Total</span>
+          <span className="text-accent tracking-tighter">IDR {cart.reduce((sum, item) => sum + (item.quantity * item.srp), 0).toLocaleString()}</span>
+        </div>
+        <button 
+          disabled={cart.length === 0 || checkingOut}
+          onClick={handleCheckout}
+          className="w-full h-16 bg-success text-white rounded-2xl shadow-xl shadow-success/20 disabled:opacity-50 disabled:grayscale transition-all duration-300 font-black uppercase tracking-[0.2em] text-xs hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
+        >
+          {checkingOut ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          ) : (
+            <>
+              <CheckCircle2 size={20} />
+              Confirm Transaction
+            </>
+          )}
+        </button>
+      </div>
+
+      <div className="flex-grow overflow-y-auto p-6 flex flex-col gap-4 bg-muted/20">
         {cart.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-4 opacity-50">
             <ShoppingCart size={64} strokeWidth={1} />
             <p className="font-black uppercase tracking-widest text-xs text-center">Select items to start<br/>operational shop-out</p>
           </div>
         ) : cart.map((item) => (
-          <div key={item.skuId} className="flex flex-col gap-3 p-4 bg-muted/20 rounded-xl border border-border/50 transition-all hover:bg-white hover:shadow-md">
+          <div key={item.skuId} className="flex flex-col gap-3 p-4 bg-white rounded-xl border border-border/50 transition-all hover:bg-white hover:shadow-md">
             <div className="flex justify-between items-start">
               <div>
                 <div className="font-bold text-primary">{item.name}</div>
@@ -160,7 +187,7 @@ export default function ShopOutPage() {
                 <Trash2 size={16} />
               </button>
             </div>
-            <div className="flex justify-between items-center bg-white p-2 rounded-lg border border-border/30">
+            <div className="flex justify-between items-center bg-muted/10 p-2 rounded-lg border border-border/30">
               <div className="flex items-center gap-4">
                 <button onClick={() => updateQuantity(item.skuId, -1)} className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded-lg transition-colors"><Minus size={14} /></button>
                 <span className="font-black text-base w-4 text-center">{item.quantity}</span>
@@ -174,33 +201,6 @@ export default function ShopOutPage() {
           </div>
         ))}
       </div>
-
-      {message && (
-        <div className={`mx-6 mb-4 p-4 rounded-xl flex items-center gap-3 text-sm font-black uppercase tracking-tight animate-fade-in shadow-sm ${
-          message.type === 'success' ? 'bg-black/5 text-black border border-black/10' : 'bg-muted text-muted-foreground border border-border'
-        }`}>
-          {message.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-          {message.text}
-        </div>
-      )}
-
-      <div className="p-6 bg-muted/40 border-t border-border/50 mt-auto">
-        <div className="flex justify-between text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 px-1">
-          <span>Total qty</span>
-          <span>{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
-        </div>
-        <div className="flex justify-between text-xl font-black mb-6 border-t border-border/50 pt-4 px-1">
-          <span className="text-primary tracking-tighter">TOTAL</span>
-          <span className="text-primary tracking-tighter">IDR {cart.reduce((sum, item) => sum + (item.quantity * item.srp), 0).toLocaleString()}</span>
-        </div>
-        <button 
-          disabled={cart.length === 0 || checkingOut}
-          onClick={handleCheckout}
-          className="w-full btn btn-primary py-5 rounded-2xl shadow-xl shadow-primary/20 disabled:opacity-50 disabled:grayscale transition-all font-black uppercase tracking-widest text-sm hover:bg-neutral-800"
-        >
-          {checkingOut ? 'Processing...' : 'CONFIRM TRANSACTION'}
-        </button>
-      </div>
     </div>
   );
 
@@ -213,14 +213,14 @@ export default function ShopOutPage() {
             <h2 className="text-3xl md:text-5xl font-black text-primary uppercase italic tracking-tighter">
               Shop-<span className="text-primary underline decoration-4 decoration-border underline-offset-8">Out</span>
             </h2>
-            <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">Rapid Asset Deployment & Deduction</p>
+            <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">{storeName || 'Stock Shop-Out Selection'}</p>
           </header>
 
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={20} />
             <input
               type="text"
-              placeholder="Query SKU code or identify item..."
+              placeholder="Search by SKU code or product name..."
               className="input pl-12 h-14 bg-white border-none shadow-xl shadow-primary/5 font-bold text-lg"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -230,9 +230,9 @@ export default function ShopOutPage() {
           <div className="flex-grow pb-10">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {loading && !fetchingMore ? (
-                <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs italic">Syncing Matrix...</div>
+                <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs italic">Loading Products...</div>
               ) : skus.length === 0 ? (
-                <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs italic">No Records Identified.</div>
+                <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs italic">No Products Found.</div>
               ) : skus.map((sku) => {
                 const isRecentlyAdded = recentlyAddedId === sku.id;
                 return (
@@ -268,14 +268,14 @@ export default function ShopOutPage() {
                       
                       <button 
                         onClick={(e) => { e.stopPropagation(); addToCart(sku); }}
-                        className={`mt-6 w-full h-12 rounded-2xl transition-all font-black uppercase tracking-[0.2em] text-[10px] active:scale-95 flex items-center justify-center gap-2 ${
+                        className={`mt-6 w-full h-12 rounded-2xl transition-all duration-300 font-black uppercase tracking-[0.2em] text-[10px] active:scale-95 flex items-center justify-center gap-2 ${
                             isRecentlyAdded 
                             ? 'bg-black text-white shadow-xl scale-105' 
-                            : 'bg-muted/30 group-hover:bg-primary group-hover:text-white'
+                            : 'bg-muted/50 text-primary hover:bg-accent hover:text-white hover:shadow-lg hover:shadow-accent/20'
                         }`}
                       >
                         {isRecentlyAdded ? <CheckCircle2 size={14} /> : <Plus size={14} />}
-                        {isRecentlyAdded ? 'Added!' : 'Add To Cart'}
+                        {isRecentlyAdded ? 'ADDED' : 'ADD TO CART'}
                       </button>
                     </div>
                   </div>
@@ -290,7 +290,7 @@ export default function ShopOutPage() {
                   disabled={fetchingMore}
                   className="btn btn-outline h-12 px-12 font-black uppercase text-[10px] tracking-widest bg-white shadow-xl shadow-primary/5 hover:bg-black hover:text-white transition-all disabled:opacity-50"
                 >
-                  {fetchingMore ? 'Expanding...' : 'Expand Matrix'}
+                  {fetchingMore ? 'Loading...' : 'Load More'}
                 </button>
               </div>
             )}
@@ -301,10 +301,14 @@ export default function ShopOutPage() {
         {cart.length > 0 && (
           <button 
             onClick={() => setIsCartOpen(!isCartOpen)}
-            className="xl:hidden fixed top-28 right-6 z-[120] bg-black text-white p-5 rounded-full shadow-2xl flex items-center gap-2 scale-110 active:scale-95 transition-all animate-bounce hover:animate-none"
+            className="xl:hidden fixed top-32 right-6 z-[120] bg-accent text-white p-4 rounded-2xl shadow-2xl shadow-accent/40 flex items-center gap-3 transition-all duration-500 animate-pulse active:scale-95"
           >
-            <ShoppingCart size={24} />
-            <span className="font-bold border-l border-white/20 pl-2">{cart.reduce((s, i) => s + i.quantity, 0)}</span>
+            <div className="relative">
+              <ShoppingCart size={20} />
+              <div className="absolute -top-3 -right-3 bg-white text-accent w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-accent">
+                 {cart.reduce((s, i) => s + i.quantity, 0)}
+              </div>
+            </div>
           </button>
         )}
 

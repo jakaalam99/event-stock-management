@@ -13,6 +13,7 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email },
+      include: { store: true },
     });
 
     if (!user) {
@@ -28,7 +29,9 @@ export async function POST(request: Request) {
       userId: user.id, 
       email: user.email, 
       role: user.role, 
-      name: user.name 
+      name: user.name,
+      storeId: user.storeId,
+      storeName: user.store.name
     });
 
     // Set cookie for persistence
@@ -46,7 +49,9 @@ export async function POST(request: Request) {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role
+        role: user.role,
+        storeId: user.storeId,
+        storeName: user.store.name
       } 
     });
   } catch (error: any) {
