@@ -36,7 +36,6 @@ export async function GET(request: Request) {
           { name: { contains: term, mode: 'insensitive' as const } },
           { code: { contains: term, mode: 'insensitive' as const } },
           { barcode: { contains: term, mode: 'insensitive' as const } },
-          { description: { contains: term, mode: 'insensitive' as const } },
         ],
       }));
     }
