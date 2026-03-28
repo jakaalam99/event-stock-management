@@ -27,7 +27,7 @@ export async function GET() {
     ] = await Promise.all([
       prisma.sku.count({ where: { storeId } }),
       prisma.sku.count({ where: { storeId, quantity: { lte: 10 } } }), // Simplified for compatibility
-      prisma.transaction.count({ where: { storeId, status: 'COMPLETED' } }),
+      prisma.transaction.count({ where: { storeId, status: 'COMPLETED', type: 'SHOP_OUT' } }),
       prisma.sku.aggregate({
         where: { storeId },
         _sum: { quantity: true }
@@ -103,6 +103,7 @@ export async function GET() {
         totalTransactions,
         totalRevenue,
         totalItemsSold,
+        averageTransactionValue: totalTransactions > 0 ? (totalRevenue / totalTransactions) : 0,
         totalStock: totalStock._sum?.quantity || 0,
         skuContributions,
         recentActivity

@@ -51,6 +51,7 @@ interface Stats {
   totalUsers: number;
   totalRevenue: number;
   totalItemsSold: number;
+  averageTransactionValue: number;
   totalStock: number;
   skuContributions: SkuContribution[];
   recentActivity: Transaction[];
@@ -95,6 +96,18 @@ function DashboardContent() {
     }));
 
     const ws = XLSX.utils.json_to_sheet(wsData);
+    
+    // Add summary information
+    XLSX.utils.sheet_add_aoa(ws, [
+      [],
+      ['SUMMARY ANALYTICS'],
+      ['Total Revenue', stats.totalRevenue],
+      ['Total Items Sold', stats.totalItemsSold],
+      ['Total Transactions', stats.totalTransactions],
+      ['Avg Transaction Value', stats.averageTransactionValue.toFixed(2)],
+      ['Total Stock', stats.totalStock]
+    ], { origin: -1 });
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "SKU Contribution");
     XLSX.writeFile(wb, `${storeName || 'EventStock'}_Analytics_${new Date().toLocaleDateString()}.xlsx`);
@@ -122,6 +135,8 @@ function DashboardContent() {
       body: [
         ['Total Realtime Revenue', `IDR ${stats.totalRevenue.toLocaleString()}`],
         ['Total Items Sold (Net)', stats.totalItemsSold.toLocaleString()],
+        ['Total Transaction Base', stats.totalTransactions.toLocaleString()],
+        ['Avg Transaction Value', `IDR ${stats.averageTransactionValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`],
         ['Total Global Current Stock', stats.totalStock.toLocaleString()],
         ['Active SKU Count', stats.totalSkus.toString()],
         ['Low Stock Alerts', stats.lowStockItems.toString()]
@@ -193,8 +208,10 @@ function DashboardContent() {
       </header>
 
       {/* Hero Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 xl:grid-cols-7 gap-4 md:gap-6">
         <StatCard title="Realtime Revenue" value={`IDR ${stats.totalRevenue.toLocaleString()}`} icon={Banknote} color="text-accent" bg="bg-accent/10" highlight />
+        <StatCard title="Transaction Count" value={stats.totalTransactions} icon={Activity} color="text-slate-700" bg="bg-slate-100" />
+        <StatCard title="Avg Trans Value" value={`IDR ${stats.averageTransactionValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} icon={TrendingDown} color="text-slate-700" bg="bg-slate-100" />
         <StatCard title="Items Sold" value={stats.totalItemsSold} icon={ShoppingBag} color="text-slate-700" bg="bg-slate-100" />
         <StatCard title="Total Stock" value={stats.totalStock} icon={Package} color="text-slate-700" bg="bg-slate-100" />
         <StatCard title="Active SKUs" value={stats.totalSkus} icon={Box} color="text-slate-700" bg="bg-slate-100" />
