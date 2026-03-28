@@ -67,10 +67,10 @@ export async function POST(request: Request) {
     // Check if barcode exists elsewhere
     if (barcode) {
       const existingBarcode = await prisma.sku.findFirst({
-        where: { barcode, NOT: { code } }
+        where: { barcode, storeId, NOT: { code } }
       });
       if (existingBarcode) {
-        return NextResponse.json({ error: 'Barcode already in use by another SKU' }, { status: 400 });
+        return NextResponse.json({ error: 'Barcode already in use by another SKU in this store' }, { status: 400 });
       }
     }
 
@@ -99,13 +99,17 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Missing identifier (id or code)' }, { status: 400 });
     }
 
-    // Check if barcode exists elsewhere
+    // Check if barcode exists elsewhere in the same store
     if (barcode) {
       const existingBarcode = await prisma.sku.findFirst({
-        where: { barcode, NOT: id ? { id } : { code_storeId: { code, storeId } } }
+        where: { 
+          barcode, 
+          storeId,
+          NOT: id ? { id } : { code } 
+        }
       });
       if (existingBarcode) {
-        return NextResponse.json({ error: 'Barcode already in use by another SKU' }, { status: 400 });
+        return NextResponse.json({ error: 'Barcode already in use by another SKU in this store' }, { status: 400 });
       }
     }
 
