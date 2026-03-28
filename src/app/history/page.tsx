@@ -22,6 +22,7 @@ interface Transaction {
     sku: {
       name: string;
       code: string;
+      srp?: number;
     };
   }[];
 }
@@ -158,6 +159,9 @@ export default function HistoryPage() {
                        <span className="text-sm font-black text-primary">
                          {groupTransactions.flatMap(t => t.items).length} Assets
                        </span>
+                       <span className="text-sm font-black text-accent ml-2">
+                         IDR {groupTransactions.flatMap(t => t.items).reduce((sum, item) => sum + (item.quantity * (item.sku?.srp || 0)), 0).toLocaleString()}
+                       </span>
                     </div>
                   </div>
 
@@ -231,6 +235,7 @@ export default function HistoryPage() {
                             <th className="pb-3 text-left w-32">SKU Code</th>
                             <th className="pb-3 text-left">Product Name</th>
                             <th className="pb-3 text-right">Qty</th>
+                            <th className="pb-3 text-right pr-4">Total Value</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border/10">
@@ -241,6 +246,11 @@ export default function HistoryPage() {
                               <td className="py-4 text-right">
                                 <span className={`text-lg font-black font-mono ${isCancelled ? 'text-muted-foreground line-through' : 'text-error'}`}>
                                   -{item.quantity}
+                                </span>
+                              </td>
+                              <td className="py-4 text-right pr-4">
+                                <span className="text-sm font-black text-accent">
+                                  IDR {(item.quantity * (item.sku?.srp || 0)).toLocaleString()}
                                 </span>
                               </td>
                             </tr>
