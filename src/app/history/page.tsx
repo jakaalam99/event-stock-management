@@ -9,6 +9,7 @@ interface Transaction {
   groupId: string;
   type: 'SHOP_OUT' | 'REVERSAL';
   status: 'COMPLETED' | 'CANCELLED';
+  notes?: string | null;
   createdAt: string;
   user: {
     id: string;
@@ -247,6 +248,13 @@ export default function HistoryPage() {
                         </tbody>
                       </table>
                     </div>
+
+                    {originalAction?.notes && (
+                      <div className="mt-8 p-6 rounded-[1.5rem] bg-accent/5 border border-accent/10">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-accent block mb-2">Transaction Notes</span>
+                        <p className="text-sm font-bold text-primary leading-relaxed italic">"{originalAction.notes}"</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { items, userId, userName } = body; // items: [{ skuId: string, quantity: number }]
+    const { items, userId, userName, notes } = body; // items: [{ skuId: string, quantity: number }]
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
@@ -83,6 +83,7 @@ export async function POST(request: Request) {
       const transaction = await tx.transaction.create({
         data: {
           groupId,
+          notes,
           userId, // Foreign Key to User
           type: 'SHOP_OUT',
           status: 'COMPLETED',

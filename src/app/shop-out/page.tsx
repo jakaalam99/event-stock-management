@@ -37,6 +37,7 @@ export default function ShopOutPage() {
   const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [storeName, setStoreName] = useState<string | null>(null);
+  const [notes, setNotes] = useState('');
 
   const fetchSkus = async (pageNum = 1, append = false) => {
     try {
@@ -110,13 +111,15 @@ export default function ShopOutPage() {
         body: JSON.stringify({
           userId: localStorage.getItem('user_id'),
           userName: localStorage.getItem('user_name') || 'Guest User',
-          items: cart.map(item => ({ skuId: item.skuId, quantity: item.quantity }))
+          items: cart.map(item => ({ skuId: item.skuId, quantity: item.quantity })),
+          notes: notes.trim() || undefined
         }),
       });
       const result = await res.json();
       if (res.ok) {
         setMessage({ text: 'Shop-out successful!', type: 'success' });
         setCart([]);
+        setNotes('');
         setIsCartOpen(false);
         fetchSkus(1, false);
       } else {
@@ -166,6 +169,16 @@ export default function ShopOutPage() {
             </>
           )}
         </button>
+
+        <div className="mt-4 flex flex-col gap-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Transaction Notes</label>
+          <textarea 
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add context or special instructions..."
+            className="w-full min-h-[80px] p-3 rounded-xl border border-border/50 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-accent/20 bg-muted/10"
+          />
+        </div>
       </div>
 
       <div className="flex-grow overflow-y-auto p-6 flex flex-col gap-4 bg-muted/20">

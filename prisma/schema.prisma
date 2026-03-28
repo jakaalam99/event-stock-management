@@ -60,6 +60,7 @@ enum UserRole {
 model Transaction {
   id        String            @id @default(cuid())
   groupId   String            @default(uuid())
+  notes     String?
   userId    String
   user      User              @relation(fields: [userId], references: [id])
   type      TransactionType
