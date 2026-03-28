@@ -24,15 +24,22 @@ export async function GET(request: Request) {
   const skip = (page - 1) * limit;
 
   try {
-    const where = {
+    const searchTerms = search.trim().split(/\s+/).filter(Boolean);
+    
+    const where: any = {
       storeId,
-      OR: [
-        { name: { contains: search, mode: 'insensitive' as const } },
-        { code: { contains: search, mode: 'insensitive' as const } },
-        { barcode: { contains: search, mode: 'insensitive' as const } },
-        { description: { contains: search, mode: 'insensitive' as const } },
-      ],
     };
+
+    if (searchTerms.length > 0) {
+      where.AND = searchTerms.map(term => ({
+        OR: [
+          { name: { contains: term, mode: 'insensitive' as const } },
+          { code: { contains: term, mode: 'insensitive' as const } },
+          { barcode: { contains: term, mode: 'insensitive' as const } },
+          { description: { contains: term, mode: 'insensitive' as const } },
+        ],
+      }));
+    }
 
     const [skus, total] = await Promise.all([
       prisma.sku.findMany({
