@@ -12,6 +12,7 @@ interface SKU {
   quantity: number;
   srp: number;
   imageUrl?: string;
+  barcode: string | null;
   lowStockThreshold: number;
   updatedAt: string;
 }
@@ -24,7 +25,7 @@ export default function InventoryPage() {
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSku, setEditingSku] = useState<SKU | null>(null);
-  const [newSku, setNewSku] = useState({ code: '', name: '', quantity: 0, srp: 0, imageUrl: '' });
+  const [newSku, setNewSku] = useState({ code: '', name: '', barcode: '', quantity: 0, srp: 0, imageUrl: '' });
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [fetchingMore, setFetchingMore] = useState(false);
@@ -177,6 +178,7 @@ export default function InventoryPage() {
     setNewSku({
       code: sku.code,
       name: sku.name,
+      barcode: sku.barcode || '',
       quantity: sku.quantity,
       srp: sku.srp,
       imageUrl: sku.imageUrl || ''
@@ -187,7 +189,7 @@ export default function InventoryPage() {
   const closeModal = () => {
     setShowAddModal(false);
     setEditingSku(null);
-    setNewSku({ code: '', name: '', quantity: 0, srp: 0, imageUrl: '' });
+    setNewSku({ code: '', name: '', barcode: '', quantity: 0, srp: 0, imageUrl: '' });
   };
 
   const handleAddSku = async (e: React.FormEvent) => {
@@ -275,6 +277,7 @@ export default function InventoryPage() {
                 <tr className="border-b border-border text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                   <th className="pb-4 px-4">IMG</th>
                   <th className="pb-4 px-4">SKU Code</th>
+                  <th className="pb-4 px-4">Barcode</th>
                   <th className="pb-4 px-4">Product Name</th>
                   <th className="pb-4 px-4 text-right">SRP (IDR)</th>
                   <th className="pb-4 px-4">Status</th>
@@ -295,6 +298,7 @@ export default function InventoryPage() {
                       </div>
                     </td>
                     <td className="py-4 px-4 font-mono text-sm font-black text-accent">{sku.code}</td>
+                    <td className="py-4 px-4 font-mono text-[10px] font-bold text-muted-foreground">{sku.barcode || '-'}</td>
                     <td className="py-4 px-4">
                       <div className="font-black text-primary group-hover:text-accent transition-colors">{sku.name}</div>
                     </td>
@@ -356,6 +360,7 @@ export default function InventoryPage() {
                   <div className="flex flex-col flex-grow justify-between py-1">
                     <div>
                       <span className="text-[10px] font-black font-mono text-accent leading-none uppercase tracking-widest">{sku.code}</span>
+                      {sku.barcode && <span className="text-[8px] font-bold font-mono text-muted-foreground block">BC: {sku.barcode}</span>}
                       <h3 className="text-xl font-black text-primary mt-1 leading-none pr-8">{sku.name}</h3>
                     </div>
                     <div className="text-sm font-black text-accent mt-2">
@@ -417,6 +422,10 @@ export default function InventoryPage() {
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Identity Code</label>
                       <input required className="input h-12 bg-muted/30 font-bold border-none" placeholder="SKU-XXX" value={newSku.code} onChange={e => setNewSku({...newSku, code: e.target.value})} />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Barcode Mapping</label>
+                      <input className="input h-12 bg-muted/30 font-bold border-none" placeholder="Primary Barcode" value={newSku.barcode} onChange={e => setNewSku({...newSku, barcode: e.target.value})} />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest ml-1">Product Designation</label>

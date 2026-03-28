@@ -11,6 +11,7 @@ interface SKU {
   quantity: number;
   srp: number;
   imageUrl?: string;
+  barcode?: string | null;
 }
 
 interface CartItem {
@@ -260,6 +261,7 @@ export default function ShopOutPage() {
                     <div className="p-6">
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] font-black font-mono text-muted-foreground leading-none uppercase tracking-[0.2em]">{sku.code}</span>
+                        {sku.barcode && <span className="text-[8px] font-bold font-mono text-muted-foreground block">BC: {sku.barcode}</span>}
                         <h3 className="text-xl font-black text-primary leading-tight group-hover:text-black transition-colors">{sku.name}</h3>
                         <div className="text-sm font-black text-primary mt-2">
                           IDR {sku.srp?.toLocaleString()}

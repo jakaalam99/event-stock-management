@@ -54,6 +54,7 @@ export async function POST(request: Request) {
             quantity: quantity, // ABSOLUTE SET
             name: name || undefined,
             srp: srp !== undefined ? srp : undefined,
+            barcode: row.Barcode || row.barcode || undefined,
             // imageUrl is NOT included here to preserve it.
           },
         });

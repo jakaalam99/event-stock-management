@@ -39,12 +39,14 @@ export async function POST(request: Request) {
       const srp = parseFloat(String(row.SRP || row.srp || '0'));
       const threshold = parseInt(String(row.Threshold || row.threshold || '10'));
 
+      const barcode = String(row.Barcode || row.barcode || '').trim() || null;
+
       if (!code || !name) continue;
 
       const result = await prisma.sku.upsert({
         where: { code_storeId: { code, storeId } },
-        update: { name, quantity: { increment: quantity }, srp, lowStockThreshold: threshold, imageUrl: row.imageUrl || null },
-        create: { code, name, quantity, srp, lowStockThreshold: threshold, imageUrl: row.imageUrl || null, storeId },
+        update: { name, quantity: { increment: quantity }, srp, lowStockThreshold: threshold, imageUrl: row.imageUrl || null, barcode },
+        create: { code, name, quantity, srp, lowStockThreshold: threshold, imageUrl: row.imageUrl || null, storeId, barcode },
       });
       results.push(result);
     }

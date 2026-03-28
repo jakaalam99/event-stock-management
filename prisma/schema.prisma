@@ -25,6 +25,7 @@ model Sku {
   description       String?
   quantity          Int               @default(0)
   srp               Float?            @default(0)
+  barcode           String?           
   imageUrl          String?           
   lowStockThreshold Int               @default(10)
   createdAt         DateTime          @default(now())
@@ -35,6 +36,7 @@ model Sku {
   store             Store             @relation(fields: [storeId], references: [id])
 
   @@unique([code, storeId])
+  @@unique([barcode, storeId])
 }
 
 model User {

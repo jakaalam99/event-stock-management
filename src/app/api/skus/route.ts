@@ -29,6 +29,7 @@ export async function GET(request: Request) {
       OR: [
         { name: { contains: search, mode: 'insensitive' as const } },
         { code: { contains: search, mode: 'insensitive' as const } },
+        { barcode: { contains: search, mode: 'insensitive' as const } },
         { description: { contains: search, mode: 'insensitive' as const } },
       ],
     };
@@ -61,12 +62,22 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { code, name, quantity, srp, lowStockThreshold, imageUrl } = body;
+    const { code, name, quantity, srp, lowStockThreshold, imageUrl, barcode } = body;
+    
+    // Check if barcode exists elsewhere
+    if (barcode) {
+      const existingBarcode = await prisma.sku.findFirst({
+        where: { barcode, NOT: { code } }
+      });
+      if (existingBarcode) {
+        return NextResponse.json({ error: 'Barcode already in use by another SKU' }, { status: 400 });
+      }
+    }
 
     const sku = await prisma.sku.upsert({
       where: { code_storeId: { code, storeId } },
-      update: { name, quantity: { increment: quantity }, srp: srp || 0, lowStockThreshold, imageUrl },
-      create: { code, name, quantity, srp: srp || 0, lowStockThreshold, imageUrl, storeId },
+      update: { name, quantity: { increment: quantity }, srp: srp || 0, lowStockThreshold, imageUrl, barcode },
+      create: { code, name, quantity, srp: srp || 0, lowStockThreshold, imageUrl, storeId, barcode },
     });
 
     return NextResponse.json(sku);
@@ -82,10 +93,20 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { id, code, name, quantity, srp, lowStockThreshold, imageUrl } = body;
-
+    const { id, code, name, quantity, srp, lowStockThreshold, imageUrl, barcode } = body;
+    
     if (!id && !code) {
       return NextResponse.json({ error: 'Missing identifier (id or code)' }, { status: 400 });
+    }
+
+    // Check if barcode exists elsewhere
+    if (barcode) {
+      const existingBarcode = await prisma.sku.findFirst({
+        where: { barcode, NOT: id ? { id } : { code_storeId: { code, storeId } } }
+      });
+      if (existingBarcode) {
+        return NextResponse.json({ error: 'Barcode already in use by another SKU' }, { status: 400 });
+      }
     }
 
     const whereCondition = id ? { id } : { code_storeId: { code, storeId } };
@@ -103,6 +124,7 @@ export async function PATCH(request: Request) {
       data: {
         name,
         code, 
+        barcode,
         quantity: quantity !== undefined ? quantity : undefined,
         srp: srp !== undefined ? srp : undefined,
         lowStockThreshold,
