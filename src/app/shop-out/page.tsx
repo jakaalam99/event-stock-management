@@ -155,12 +155,19 @@ export default function ShopOutPage() {
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     setCheckingOut(true);
+    const userId = localStorage.getItem('user_id');
+    if (!userId) {
+      setMessage({ text: 'User ID missing. Please log in again.', type: 'error' });
+      setCheckingOut(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: localStorage.getItem('user_id'),
+          userId,
           userName: localStorage.getItem('user_name') || 'Guest User',
           items: cart.map(item => ({ skuId: item.skuId, quantity: item.quantity })),
           notes: notes.trim() || undefined
@@ -296,6 +303,15 @@ export default function ShopOutPage() {
             </h2>
             <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">{storeName || 'Stock Shop-Out Selection'}</p>
           </header>
+
+          {message && (
+            <div className={`p-4 rounded-2xl flex items-center gap-3 animate-fade-in border-2 ${
+              message.type === 'success' ? 'bg-success/5 text-success border-success/10' : 'bg-error/5 text-error border-error/10'
+            }`}>
+              {message.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+              <span className="font-bold uppercase tracking-tight text-xs">{message.text}</span>
+            </div>
+          )}
 
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={20} />
