@@ -11,9 +11,24 @@ async function getSessionStoreId() {
   return decoded?.storeId || null;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const storeId = await getSessionStoreId();
   if (!storeId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const startDate = searchParams.get('startDate');
+  const endDate = searchParams.get('endDate');
+
+  const dateFilter: any = {};
+  if (startDate || endDate) {
+    dateFilter.createdAt = {};
+    if (startDate) dateFilter.createdAt.gte = new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      dateFilter.createdAt.lte = end;
+    }
+  }
 
   try {
     const [
@@ -27,13 +42,13 @@ export async function GET() {
     ] = await Promise.all([
       prisma.sku.count({ where: { storeId } }),
       prisma.sku.count({ where: { storeId, quantity: { lte: 10 } } }), // Simplified for compatibility
-      prisma.transaction.count({ where: { storeId, status: 'COMPLETED', type: 'SHOP_OUT' } }),
+      prisma.transaction.count({ where: { storeId, status: 'COMPLETED', type: 'SHOP_OUT', ...dateFilter } }),
       prisma.sku.aggregate({
         where: { storeId },
         _sum: { quantity: true }
       }),
       prisma.transaction.findMany({
-        where: { storeId, status: 'COMPLETED' },
+        where: { storeId, status: 'COMPLETED', ...dateFilter },
         include: {
           user: { select: { name: true } },
           items: { include: { sku: { select: { name: true, srp: true, code: true } } } }
@@ -47,7 +62,8 @@ export async function GET() {
             transaction: {
                 storeId,
                 status: 'COMPLETED',
-                type: 'SHOP_OUT'
+                type: 'SHOP_OUT',
+                ...dateFilter
             }
         },
         include: {

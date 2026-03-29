@@ -67,9 +67,37 @@ export default function ShopOutPage() {
     const delayDebounce = setTimeout(() => {
       fetchSkus(1, false);
       setStoreName(localStorage.getItem('store_name'));
+      
+      // Load cart from localStorage
+      const savedCart = localStorage.getItem('shop_out_cart');
+      const savedNotes = localStorage.getItem('shop_out_notes');
+      if (savedCart) {
+        try {
+          setCart(JSON.parse(savedCart));
+        } catch (e) {
+          console.error('Failed to parse saved cart');
+        }
+      }
+      if (savedNotes) setNotes(savedNotes);
     }, 300);
     return () => clearTimeout(delayDebounce);
   }, [searchTerm]);
+
+  useEffect(() => {
+    if (cart.length > 0) {
+      localStorage.setItem('shop_out_cart', JSON.stringify(cart));
+    } else {
+      localStorage.removeItem('shop_out_cart');
+    }
+  }, [cart]);
+
+  useEffect(() => {
+    if (notes) {
+      localStorage.setItem('shop_out_notes', notes);
+    } else {
+      localStorage.removeItem('shop_out_notes');
+    }
+  }, [notes]);
 
   const addToCart = (sku: SKU) => {
     if (sku.quantity <= 0) return;
@@ -120,6 +148,8 @@ export default function ShopOutPage() {
         setMessage({ text: 'Shop-out successful!', type: 'success' });
         setCart([]);
         setNotes('');
+        localStorage.removeItem('shop_out_cart');
+        localStorage.removeItem('shop_out_notes');
         setIsCartOpen(false);
         fetchSkus(1, false);
       } else {

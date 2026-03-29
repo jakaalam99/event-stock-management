@@ -43,6 +43,18 @@ export async function GET(request: Request) {
     const [skus, total] = await Promise.all([
       prisma.sku.findMany({
         where,
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          quantity: true,
+          srp: true,
+          barcode: true,
+          imageUrl: true,
+          lowStockThreshold: true,
+          createdAt: true,
+          updatedAt: true,
+        },
         orderBy: { [sort]: order },
         skip,
         take: limit,

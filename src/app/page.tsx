@@ -61,10 +61,13 @@ function DashboardContent() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [storeName, setStoreName] = useState<string | null>(null);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const fetchDashboardData = async () => {
     try {
-      const res = await fetch('/api/dashboard/stats');
+      setLoading(true);
+      const res = await fetch(`/api/dashboard/stats?startDate=${startDate}&endDate=${endDate}`);
       const data = await res.json();
       
       if (res.ok) {
@@ -81,8 +84,11 @@ function DashboardContent() {
 
   useEffect(() => {
     setStoreName(localStorage.getItem('store_name'));
-    fetchDashboardData();
   }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [startDate, endDate]);
 
   const exportToExcel = () => {
     if (!stats) return;
@@ -110,7 +116,8 @@ function DashboardContent() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "SKU Contribution");
-    XLSX.writeFile(wb, `${storeName || 'EventStock'}_Analytics_${new Date().toLocaleDateString()}.xlsx`);
+    const dateStr = startDate && endDate ? `${startDate}_to_${endDate}` : new Date().toLocaleDateString();
+    XLSX.writeFile(wb, `${storeName || 'EventStock'}_Analytics_${dateStr}.xlsx`);
   };
 
   const exportToPDF = () => {
@@ -127,10 +134,12 @@ function DashboardContent() {
     
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 40);
+    const dateRangeStr = startDate && endDate ? `${startDate} to ${endDate}` : 'All Time';
+    doc.text(`Period: ${dateRangeStr}`, 14, 40);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 46);
     
     autoTable(doc, {
-      startY: 48,
+      startY: 52,
       head: [['Metric', 'Value']],
       body: [
         ['Total Realtime Revenue', `IDR ${stats.totalRevenue.toLocaleString()}`],
@@ -161,7 +170,8 @@ function DashboardContent() {
       styles: { fontSize: 8 }
     });
 
-    doc.save(`${storeName || 'EventStock'}_Report_${new Date().toLocaleDateString()}.pdf`);
+    const docDateStr = startDate && endDate ? `${startDate}_to_${endDate}` : new Date().toLocaleDateString();
+    doc.save(`${storeName || 'EventStock'}_Report_${docDateStr}.pdf`);
   };
 
   if (loading) return (
@@ -189,7 +199,26 @@ function DashboardContent() {
           <p className="text-slate-500 text-sm md:text-lg font-bold uppercase tracking-[0.2em] mt-2 border-l-4 border-accent pl-4">{storeName || 'Store Overview'}</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-border">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">From</span>
+            <input 
+              type="date" 
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)}
+              className="text-xs font-bold focus:outline-none bg-transparent"
+            />
+          </div>
+          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-border">
+            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground whitespace-nowrap">To</span>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)}
+              className="text-xs font-bold focus:outline-none bg-transparent"
+            />
+          </div>
+          <div className="w-px h-8 bg-border/50 mx-2 hidden md:block" />
           <button 
             onClick={exportToExcel}
             className="btn btn-outline h-11 bg-white hover:bg-success/5 hover:text-success hover:border-success/30 flex items-center gap-2 text-xs font-black uppercase tracking-widest"

@@ -37,6 +37,9 @@ model Sku {
 
   @@unique([code, storeId])
   @@unique([barcode, storeId])
+  @@index([storeId, name])
+  @@index([storeId, createdAt])
+  @@index([storeId, quantity])
 }
 
 model User {
