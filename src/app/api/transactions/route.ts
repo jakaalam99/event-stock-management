@@ -52,14 +52,17 @@ export async function POST(request: Request) {
 
     // Atomic Transaction with Concurrency Control
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Lock rows and check availability
-      for (const item of items) {
-        // Use raw SQL for row-level locking (SELECT ... FOR UPDATE)
-        const [sku] = await tx.$queryRawUnsafe<any[]>(
-          `SELECT id, quantity, name, "storeId" FROM "Sku" WHERE id = $1 FOR UPDATE`,
-          item.skuId
-        );
+      // 1. Batch lock rows and check availability in one go
+      const skuIds = items.map((item: any) => item.skuId);
+      const skus = await tx.$queryRawUnsafe<any[]>(
+        `SELECT id, quantity, name, "storeId" FROM "Sku" WHERE id = ANY($1) FOR UPDATE`,
+        skuIds
+      );
 
+      // Validate all requested items
+      for (const item of items) {
+        const sku = skus.find(s => s.id === item.skuId);
+        
         if (!sku || sku.storeId !== storeId) {
           throw new Error(`SKU with ID ${item.skuId} not found or unauthorized`);
         }
@@ -84,10 +87,10 @@ export async function POST(request: Request) {
         data: {
           groupId,
           notes,
-          userId, // Foreign Key to User
+          userId,
           type: 'SHOP_OUT',
           status: 'COMPLETED',
-          storeId, // Restrict to store
+          storeId,
           items: {
             create: items.map((item: any) => ({
               skuId: item.skuId,
@@ -97,11 +100,13 @@ export async function POST(request: Request) {
         },
         include: {
           items: true,
-          user: true, // Include user data for the response
+          user: true,
         },
       });
 
       return transaction;
+    }, {
+      timeout: 15000, // 15s to prevent "Transaction not found" on slower DB responses
     });
 
     return NextResponse.json(result);
