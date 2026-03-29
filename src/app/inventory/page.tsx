@@ -35,16 +35,19 @@ export default function InventoryPage() {
 
   const fetchSkus = async (pageNum = 1, append = false) => {
     try {
-      if (!append) setLoading(true);
-      else setFetchingMore(true);
+      if (!append && skus.length === 0) setLoading(true);
+      else if (!append) setLoading(false); // Background refresh
+      if (append) setFetchingMore(true);
       
       const res = await fetch(`/api/skus?search=${searchTerm}&page=${pageNum}&limit=20`);
       const result = await res.json();
       
-      if (append) {
-        setSkus(prev => [...prev, ...(result.data || [])]);
-      } else {
-        setSkus(result.data || []);
+      const newSkus = append ? [...skus, ...(result.data || [])] : (result.data || []);
+      setSkus(newSkus);
+
+      // Save for Flash Fast hydration
+      if (!searchTerm && pageNum === 1) {
+        localStorage.setItem('inventory_skus_cache', JSON.stringify(newSkus));
       }
       
       setHasMore((result.data?.length || 0) === 20);
@@ -137,11 +140,33 @@ export default function InventoryPage() {
     }
   };
 
+  // 1. Initial Mount: Load from cache
   useEffect(() => {
+    setStoreName(localStorage.getItem('store_name'));
+    
+    // Load SKUs cache (Flash Fast)
+    const cachedSkus = localStorage.getItem('inventory_skus_cache');
+    if (cachedSkus) {
+      try {
+        setSkus(JSON.parse(cachedSkus));
+        setLoading(false); // Show cache immediately
+      } catch (e) {}
+    }
+
+    // Initial fetch
+    fetchSkus(1, false);
+  }, []);
+
+  // 2. Search logic: Debounced fetch
+  useEffect(() => {
+    if (!searchTerm) {
+      fetchSkus(1, false);
+      return;
+    }
+
     const delayDebounce = setTimeout(() => {
       fetchSkus(1, false);
-      setStoreName(localStorage.getItem('store_name'));
-    }, 300);
+    }, 400);
     return () => clearTimeout(delayDebounce);
   }, [searchTerm]);
 
@@ -314,10 +339,21 @@ export default function InventoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
-                {loading ? (
-                  <tr><td colSpan={7} className="py-20 text-center text-muted-foreground italic font-black uppercase tracking-widest text-xs">Loading Stock...</td></tr>
+                {loading && skus.length === 0 ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="py-4 px-4"><div className="w-12 h-12 bg-muted rounded-xl" /></td>
+                      <td className="py-4 px-4"><div className="h-4 w-16 bg-muted rounded" /></td>
+                      <td className="py-4 px-4"><div className="h-4 w-20 bg-muted rounded" /></td>
+                      <td className="py-4 px-4"><div className="h-4 w-32 bg-muted rounded" /></td>
+                      <td className="py-4 px-4"><div className="h-4 w-16 bg-muted rounded ml-auto" /></td>
+                      <td className="py-4 px-4"><div className="h-6 w-20 bg-muted rounded-full mx-auto" /></td>
+                      <td className="py-4 px-4"><div className="h-6 w-8 bg-muted rounded ml-auto" /></td>
+                      <td className="py-4 px-4"><div className="h-8 w-8 bg-muted rounded ml-auto" /></td>
+                    </tr>
+                  ))
                 ) : skus.length === 0 ? (
-                  <tr><td colSpan={7} className="py-20 text-center text-muted-foreground italic font-black uppercase tracking-widest text-xs">No records found.</td></tr>
+                  <tr><td colSpan={8} className="py-20 text-center text-muted-foreground italic font-black uppercase tracking-widest text-xs">No records found.</td></tr>
                 ) : skus.map((sku) => (
                   <tr key={sku.id} className="hover:bg-muted/30 transition-all group">
                     <td className="py-4 px-4">
@@ -368,8 +404,20 @@ export default function InventoryPage() {
 
           {/* Mobile Grid */}
           <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {loading ? (
-              <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs">Accessing Data...</div>
+            {loading && skus.length === 0 ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="p-5 rounded-3xl border border-border/40 bg-white animate-pulse flex flex-col gap-4">
+                  <div className="flex gap-4">
+                    <div className="w-20 h-20 bg-muted rounded-2xl shrink-0" />
+                    <div className="flex flex-col gap-2 flex-grow">
+                      <div className="h-2 w-12 bg-muted rounded" />
+                      <div className="h-6 w-full bg-muted rounded" />
+                      <div className="h-4 w-1/2 bg-muted rounded mt-1" />
+                    </div>
+                  </div>
+                  <div className="h-12 w-full bg-muted rounded-2xl" />
+                </div>
+              ))
             ) : skus.length === 0 ? (
               <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs">No products found.</div>
             ) : skus.map((sku) => (

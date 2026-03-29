@@ -38,19 +38,23 @@ export default function ShopOutPage() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [storeName, setStoreName] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const fetchSkus = async (pageNum = 1, append = false) => {
     try {
-      if (!append) setLoading(true);
-      else setFetchingMore(true);
+      if (!append && skus.length === 0) setLoading(true);
+      else if (!append) setLoading(false); // Background refresh
+      if (append) setFetchingMore(true);
 
       const res = await fetch(`/api/skus?search=${searchTerm}&page=${pageNum}&limit=12`);
       const result = await res.json();
       
-      if (append) {
-        setSkus(prev => [...prev, ...(result.data || [])]);
-      } else {
-        setSkus(result.data || []);
+      const newSkus = append ? [...skus, ...(result.data || [])] : (result.data || []);
+      setSkus(newSkus);
+      
+      // Save for Flash Fast hydration
+      if (!searchTerm && pageNum === 1) {
+        localStorage.setItem('shop_out_skus_cache', JSON.stringify(newSkus));
       }
       
       setHasMore((result.data?.length || 0) === 12);
@@ -63,33 +67,52 @@ export default function ShopOutPage() {
     }
   };
 
+  // 1. Initial Mount: Load everything from localStorage
   useEffect(() => {
+    setStoreName(localStorage.getItem('store_name'));
+    
+    // Load SKUs cache (Flash Fast)
+    const cachedSkus = localStorage.getItem('shop_out_skus_cache');
+    if (cachedSkus) {
+      try {
+        setSkus(JSON.parse(cachedSkus));
+        setLoading(false); // Show cache immediately
+      } catch (e) {}
+    }
+
+    // Load Cart
+    const savedCart = localStorage.getItem('shop_out_cart');
+    const savedNotes = localStorage.getItem('shop_out_notes');
+    if (savedCart) {
+      try {
+        setCart(JSON.parse(savedCart));
+      } catch (e) {}
+    }
+    if (savedNotes) setNotes(savedNotes);
+
+    // Initial fetch
+    fetchSkus(1, false);
+    setIsHydrated(true);
+  }, []);
+
+  // 2. Search logic: Debounced fetch
+  useEffect(() => {
+    if (!searchTerm) {
+      // If cleared, maybe restore from cache or just fetch
+      fetchSkus(1, false);
+      return;
+    }
+
     const delayDebounce = setTimeout(() => {
       fetchSkus(1, false);
-      setStoreName(localStorage.getItem('store_name'));
-      
-      // Load cart from localStorage
-      const savedCart = localStorage.getItem('shop_out_cart');
-      const savedNotes = localStorage.getItem('shop_out_notes');
-      if (savedCart) {
-        try {
-          setCart(JSON.parse(savedCart));
-        } catch (e) {
-          console.error('Failed to parse saved cart');
-        }
-      }
-      if (savedNotes) setNotes(savedNotes);
-    }, 300);
+    }, 400);
     return () => clearTimeout(delayDebounce);
   }, [searchTerm]);
 
   useEffect(() => {
-    if (cart.length > 0) {
-      localStorage.setItem('shop_out_cart', JSON.stringify(cart));
-    } else {
-      localStorage.removeItem('shop_out_cart');
-    }
-  }, [cart]);
+    if (!isHydrated) return;
+    localStorage.setItem('shop_out_cart', JSON.stringify(cart));
+  }, [cart, isHydrated]);
 
   useEffect(() => {
     if (notes) {
@@ -162,6 +185,20 @@ export default function ShopOutPage() {
       setTimeout(() => setMessage(null), 5000);
     }
   };
+
+  const SkuSkeleton = () => (
+    <div className="group p-0 rounded-[2.5rem] bg-white border border-border/40 shadow-xl shadow-primary/5 animate-pulse overflow-hidden">
+      <div className="h-60 w-full bg-muted/20" />
+      <div className="p-6 flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <div className="h-2 w-16 bg-muted rounded" />
+          <div className="h-6 w-3/4 bg-muted rounded" />
+          <div className="h-4 w-1/4 bg-muted rounded mt-2" />
+        </div>
+        <div className="h-12 w-full bg-muted rounded-2xl" />
+      </div>
+    </div>
+  );
 
   const renderCart = (isSidebar = false) => (
     <div className={`flex flex-col bg-white ${isSidebar ? 'lg:h-full border border-border/50 rounded-2xl shadow-xl sticky top-6' : 'h-full w-full max-w-md ml-auto shadow-2xl animate-slide-in-right'}`}>
@@ -274,7 +311,7 @@ export default function ShopOutPage() {
           <div className="flex-grow pb-10">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {loading && !fetchingMore ? (
-                <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs italic">Loading Products...</div>
+                Array.from({ length: 6 }).map((_, i) => <SkuSkeleton key={i} />)
               ) : skus.length === 0 ? (
                 <div className="col-span-full py-20 text-center text-muted-foreground font-black uppercase tracking-widest text-xs italic">No Products Found.</div>
               ) : skus.map((sku) => {
