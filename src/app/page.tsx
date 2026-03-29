@@ -66,14 +66,16 @@ function DashboardContent() {
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true);
+      if (!stats) setLoading(true);
       const res = await fetch(`/api/dashboard/stats?startDate=${startDate}&endDate=${endDate}`);
       const data = await res.json();
       
       if (res.ok) {
         setStats(data);
-      } else {
-        console.error('Failed to fetch dashboard stats:', data.error);
+        // Cache only if no date filter (base stats)
+        if (!startDate && !endDate) {
+          localStorage.setItem('dashboard_stats_cache', JSON.stringify(data));
+        }
       }
     } catch (err) {
       console.error('Dashboard data fetch error:', err);
@@ -84,10 +86,23 @@ function DashboardContent() {
 
   useEffect(() => {
     setStoreName(localStorage.getItem('store_name'));
+    
+    // Flash Fast hydration
+    const cachedStats = localStorage.getItem('dashboard_stats_cache');
+    if (cachedStats) {
+      try {
+        setStats(JSON.parse(cachedStats));
+        setLoading(false);
+      } catch (e) {}
+    }
+    
+    fetchDashboardData();
   }, []);
 
   useEffect(() => {
-    fetchDashboardData();
+    if (startDate || endDate) {
+      fetchDashboardData();
+    }
   }, [startDate, endDate]);
 
   const exportToExcel = () => {

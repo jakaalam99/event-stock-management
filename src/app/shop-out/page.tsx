@@ -229,6 +229,16 @@ export default function ShopOutPage() {
           <span className="text-primary tracking-tighter uppercase italic">Total</span>
           <span className="text-accent tracking-tighter">IDR {cart.reduce((sum, item) => sum + (item.quantity * item.srp), 0).toLocaleString()}</span>
         </div>
+
+        {message && (
+          <div className={`mb-4 p-4 rounded-xl flex items-center gap-3 animate-fade-in border-2 ${
+            message.type === 'success' ? 'bg-success/5 text-success border-success/10' : 'bg-error/5 text-error border-error/10'
+          }`}>
+            {message.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+            <span className="font-bold uppercase tracking-tight text-[10px]">{message.text}</span>
+          </div>
+        )}
+
         <button 
           disabled={cart.length === 0 || checkingOut}
           onClick={handleCheckout}
@@ -303,15 +313,6 @@ export default function ShopOutPage() {
             </h2>
             <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">{storeName || 'Stock Shop-Out Selection'}</p>
           </header>
-
-          {message && (
-            <div className={`p-4 rounded-2xl flex items-center gap-3 animate-fade-in border-2 ${
-              message.type === 'success' ? 'bg-success/5 text-success border-success/10' : 'bg-error/5 text-error border-error/10'
-            }`}>
-              {message.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-              <span className="font-bold uppercase tracking-tight text-xs">{message.text}</span>
-            </div>
-          )}
 
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={20} />
